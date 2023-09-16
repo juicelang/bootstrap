@@ -21,9 +21,9 @@ data package {
 }
 
 impl default for package {
-    fn default(self: package) -> string {
-        "0.0.0"
-    }
+	fn default(self: package) -> string {
+		"0.0.0"
+	}
 }
 
 // Async functions are declared by returning a future type.
@@ -31,25 +31,25 @@ fn get_package() -> future(result(package)) {
 	// To await a value, use the `await` property of a future.
 	package = read_file("./package.json").await?
 
-    // Runtime values can have their type validated.
+  // Runtime values can have their type validated.
 	data: package = validate(
 		$type: package,
 		json.parse(package),
 		{ permissive = true, }
 	)?
 
-    // Returns are implicit when the function has a return type.
-    // The `return` keyword can still be used to return early.
+  // Returns are implicit when the function has a return type.
+  // The `return` keyword can still be used to return early.
 	data
 }
 
 fn get_app_version!() -> future(token_stream) {
-    // Other unwrap options are `unwrap()`, `unwrap_or("value")`, and `unwrap_else(fn () -> string { "value" })`
+  // Other unwrap options are `unwrap()`, `unwrap_or("value")`, and `unwrap_else(fn () -> string { "value" })`
 	package := get_package().await.unwrap_default()
-    version := quote!(package.version)
+	version := quote!(package.version)
 
 	tokens! {
-        #{version}
+		#{version}
 	}
 }
 
