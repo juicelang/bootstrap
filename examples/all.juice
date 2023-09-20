@@ -22,20 +22,20 @@ data package {
 
 impl default for package {
 	fn default(self: package) -> string {
-		"0.0.0"
+		package { version = "0.0.0" }
 	}
 }
 
 // Async functions are declared by returning a future type.
 fn get_package() -> future(result(package)) {
 	// To await a value, use the `await` property of a future.
-	package = read_file("./package.json").await?
+	text = read_file("./package.json").await?
 
   // Runtime values can have their type validated.
 	data: package = validate(
 		$type: package,
-		json.parse(package),
-		{ permissive = true, }
+		json.parse(text),
+		{ permissive = true }
 	)?
 
   // Returns are implicit when the function has a return type.
@@ -64,11 +64,11 @@ fn app() -> react_node {
 	(counter, set_counter): counter_state = use_state(0)
 
 	fn handle_increment() {
-		set_counter(fn (prev) -> number { prev + 1 })
+		set_counter(fn (prev: number) -> number { prev + 1 })
 	}
 
 	fn handle_decrement() {
-		set_counter(fn (prev) -> number { prev - 1 })
+		set_counter(fn (prev: number) -> number { prev - 1 })
 	}
 
 	jsx! {

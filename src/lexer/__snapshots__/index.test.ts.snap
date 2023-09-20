@@ -1,0 +1,428 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Lexer Examples lexes hello world 1`] = `
+[
+  {
+    "kind": "keyword",
+    "location": {
+      "end": {
+        "column": 7,
+        "line": 1,
+      },
+      "start": {
+        "column": 1,
+        "line": 1,
+      },
+    },
+    "value": "import",
+  },
+  {
+    "kind": "whitespace",
+    "location": {
+      "end": {
+        "column": 8,
+        "line": 1,
+      },
+      "start": {
+        "column": 7,
+        "line": 1,
+      },
+    },
+    "value": " ",
+  },
+  {
+    "kind": "identifier",
+    "location": {
+      "end": {
+        "column": 11,
+        "line": 1,
+      },
+      "start": {
+        "column": 8,
+        "line": 1,
+      },
+    },
+    "value": "dev",
+  },
+  {
+    "kind": "operator",
+    "location": {
+      "end": {
+        "column": 12,
+        "line": 1,
+      },
+      "start": {
+        "column": 11,
+        "line": 1,
+      },
+    },
+    "value": ".",
+  },
+  {
+    "kind": "identifier",
+    "location": {
+      "end": {
+        "column": 17,
+        "line": 1,
+      },
+      "start": {
+        "column": 12,
+        "line": 1,
+      },
+    },
+    "value": "juice",
+  },
+  {
+    "kind": "operator",
+    "location": {
+      "end": {
+        "column": 18,
+        "line": 1,
+      },
+      "start": {
+        "column": 17,
+        "line": 1,
+      },
+    },
+    "value": ".",
+  },
+  {
+    "kind": "identifier",
+    "location": {
+      "end": {
+        "column": 20,
+        "line": 1,
+      },
+      "start": {
+        "column": 18,
+        "line": 1,
+      },
+    },
+    "value": "io",
+  },
+  {
+    "kind": "whitespace",
+    "location": {
+      "end": {
+        "column": 21,
+        "line": 1,
+      },
+      "start": {
+        "column": 20,
+        "line": 1,
+      },
+    },
+    "value": " ",
+  },
+  {
+    "kind": "open_paren",
+    "location": {
+      "end": {
+        "column": 21,
+        "line": 1,
+      },
+      "start": {
+        "column": 21,
+        "line": 1,
+      },
+    },
+  },
+  {
+    "kind": "identifier",
+    "location": {
+      "end": {
+        "column": 32,
+        "line": 1,
+      },
+      "start": {
+        "column": 22,
+        "line": 1,
+      },
+    },
+    "value": "print_line",
+  },
+  {
+    "kind": "close_paren",
+    "location": {
+      "end": {
+        "column": 32,
+        "line": 1,
+      },
+      "start": {
+        "column": 32,
+        "line": 1,
+      },
+    },
+  },
+  {
+    "kind": "whitespace",
+    "location": {
+      "end": {
+        "column": 5,
+        "line": 3,
+      },
+      "start": {
+        "column": 33,
+        "line": 1,
+      },
+    },
+    "value": 
+"
+
+				"
+,
+  },
+  {
+    "kind": "keyword",
+    "location": {
+      "end": {
+        "column": 11,
+        "line": 3,
+      },
+      "start": {
+        "column": 5,
+        "line": 3,
+      },
+    },
+    "value": "export",
+  },
+  {
+    "kind": "whitespace",
+    "location": {
+      "end": {
+        "column": 12,
+        "line": 3,
+      },
+      "start": {
+        "column": 11,
+        "line": 3,
+      },
+    },
+    "value": " ",
+  },
+  {
+    "kind": "keyword",
+    "location": {
+      "end": {
+        "column": 14,
+        "line": 3,
+      },
+      "start": {
+        "column": 12,
+        "line": 3,
+      },
+    },
+    "value": "fn",
+  },
+  {
+    "kind": "whitespace",
+    "location": {
+      "end": {
+        "column": 15,
+        "line": 3,
+      },
+      "start": {
+        "column": 14,
+        "line": 3,
+      },
+    },
+    "value": " ",
+  },
+  {
+    "kind": "identifier",
+    "location": {
+      "end": {
+        "column": 19,
+        "line": 3,
+      },
+      "start": {
+        "column": 15,
+        "line": 3,
+      },
+    },
+    "value": "main",
+  },
+  {
+    "kind": "open_paren",
+    "location": {
+      "end": {
+        "column": 19,
+        "line": 3,
+      },
+      "start": {
+        "column": 19,
+        "line": 3,
+      },
+    },
+  },
+  {
+    "kind": "close_paren",
+    "location": {
+      "end": {
+        "column": 20,
+        "line": 3,
+      },
+      "start": {
+        "column": 20,
+        "line": 3,
+      },
+    },
+  },
+  {
+    "kind": "whitespace",
+    "location": {
+      "end": {
+        "column": 22,
+        "line": 3,
+      },
+      "start": {
+        "column": 21,
+        "line": 3,
+      },
+    },
+    "value": " ",
+  },
+  {
+    "kind": "open_curly",
+    "location": {
+      "end": {
+        "column": 22,
+        "line": 3,
+      },
+      "start": {
+        "column": 22,
+        "line": 3,
+      },
+    },
+  },
+  {
+    "kind": "whitespace",
+    "location": {
+      "end": {
+        "column": 6,
+        "line": 4,
+      },
+      "start": {
+        "column": 23,
+        "line": 3,
+      },
+    },
+    "value": 
+"
+					"
+,
+  },
+  {
+    "kind": "identifier",
+    "location": {
+      "end": {
+        "column": 16,
+        "line": 4,
+      },
+      "start": {
+        "column": 6,
+        "line": 4,
+      },
+    },
+    "value": "print_line",
+  },
+  {
+    "kind": "open_paren",
+    "location": {
+      "end": {
+        "column": 16,
+        "line": 4,
+      },
+      "start": {
+        "column": 16,
+        "line": 4,
+      },
+    },
+  },
+  {
+    "kind": "string",
+    "location": {
+      "end": {
+        "column": 31,
+        "line": 4,
+      },
+      "start": {
+        "column": 17,
+        "line": 4,
+      },
+    },
+    "value": [
+      {
+        "kind": "raw_string",
+        "location": {
+          "end": {
+            "column": 30,
+            "line": 4,
+          },
+          "start": {
+            "column": 18,
+            "line": 4,
+          },
+        },
+        "value": "hello world!",
+      },
+    ],
+  },
+  {
+    "kind": "close_paren",
+    "location": {
+      "end": {
+        "column": 31,
+        "line": 4,
+      },
+      "start": {
+        "column": 31,
+        "line": 4,
+      },
+    },
+  },
+  {
+    "kind": "whitespace",
+    "location": {
+      "end": {
+        "column": 5,
+        "line": 5,
+      },
+      "start": {
+        "column": 32,
+        "line": 4,
+      },
+    },
+    "value": 
+"
+				"
+,
+  },
+  {
+    "kind": "close_curly",
+    "location": {
+      "end": {
+        "column": 5,
+        "line": 5,
+      },
+      "start": {
+        "column": 5,
+        "line": 5,
+      },
+    },
+  },
+  {
+    "kind": "eof",
+    "location": {
+      "end": {
+        "column": 6,
+        "line": 5,
+      },
+      "start": {
+        "column": 6,
+        "line": 5,
+      },
+    },
+  },
+]
+`;

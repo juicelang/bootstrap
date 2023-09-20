@@ -2,7 +2,8 @@
 	"compilerOptions": {
 		// add Bun type definitions
 		"types": [
-			"bun-types"
+			"bun-types",
+			"vitest/globals"
 		],
 		// enable latest features
 		"lib": [
