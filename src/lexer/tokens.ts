@@ -49,7 +49,7 @@ export interface boolean_token extends base_token {
 
 export interface string_token extends base_token {
   kind: "string";
-  value: (raw_string_token | interpolated_string_token)[];
+  value: (raw_string_token | interpolation_token)[];
 }
 
 export interface raw_string_token extends base_token {
@@ -57,8 +57,8 @@ export interface raw_string_token extends base_token {
   value: string;
 }
 
-export interface interpolated_string_token extends base_token {
-  kind: "interpolated_string";
+export interface interpolation_token extends base_token {
+  kind: "interpolation";
   value: token[];
 }
 
@@ -109,6 +109,7 @@ export type token =
   | boolean_token
   | string_token
   | number_token
+  | interpolation_token
   | comment_token
   | open_curly_token
   | close_curly_token

@@ -311,7 +311,7 @@ describe("Lexer", () => {
                 },
               },
               {
-                kind: "interpolated_string",
+                kind: "interpolation",
                 value: [
                   {
                     kind: "identifier",
@@ -325,6 +325,14 @@ describe("Lexer", () => {
                 location: {
                   start: { line: 1, column: 10 },
                   end: { line: 1, column: 14 },
+                },
+              },
+              {
+                kind: "raw_string",
+                value: "",
+                location: {
+                  start: { line: 1, column: 15 },
+                  end: { line: 1, column: 15 },
                 },
               },
             ],
@@ -370,6 +378,118 @@ describe("Lexer", () => {
     });
 
     describe("Operators", () => {
+      test("lexes member access", () => {
+        let code = trim(`x.y.z`);
+        let tokens = l.lex(code);
+
+        expect(tokens).toEqual([
+          {
+            kind: "identifier",
+            value: "x",
+            location: {
+              start: { line: 1, column: 1 },
+              end: { line: 1, column: 2 },
+            },
+          },
+          {
+            kind: "operator",
+            value: ".",
+            location: {
+              start: { line: 1, column: 2 },
+              end: { line: 1, column: 3 },
+            },
+          },
+          {
+            kind: "identifier",
+            value: "y",
+            location: {
+              start: { line: 1, column: 3 },
+              end: { line: 1, column: 4 },
+            },
+          },
+          {
+            kind: "operator",
+            value: ".",
+            location: {
+              start: { line: 1, column: 4 },
+              end: { line: 1, column: 5 },
+            },
+          },
+          {
+            kind: "identifier",
+            value: "z",
+            location: {
+              start: { line: 1, column: 5 },
+              end: { line: 1, column: 6 },
+            },
+          },
+          {
+            kind: "eof",
+            location: {
+              start: { line: 1, column: 6 },
+              end: { line: 1, column: 6 },
+            },
+          },
+        ]);
+      });
+
+      test("lexes interpolated member access", () => {
+        let code = trim(`x.\${"y"}`);
+        let tokens = l.lex(code);
+
+        expect(tokens).toEqual([
+          {
+            kind: "identifier",
+            value: "x",
+            location: {
+              start: { line: 1, column: 1 },
+              end: { line: 1, column: 2 },
+            },
+          },
+          {
+            kind: "operator",
+            value: ".",
+            location: {
+              start: { line: 1, column: 2 },
+              end: { line: 1, column: 3 },
+            },
+          },
+          {
+            kind: "interpolation",
+            value: [
+              {
+                kind: "string",
+                value: [
+                  {
+                    kind: "raw_string",
+                    value: "y",
+                    location: {
+                      start: { line: 1, column: 6 },
+                      end: { line: 1, column: 7 },
+                    },
+                  },
+                ],
+                location: {
+                  start: { line: 1, column: 5 },
+                  end: { line: 1, column: 8 },
+                },
+              },
+            ],
+            location: {
+              start: { line: 1, column: 5 },
+              end: { line: 1, column: 8 },
+            },
+          },
+          {
+            kind: "eof",
+            location: {
+              start: { line: 1, column: 9 },
+              end: { line: 1, column: 9 },
+            },
+          },
+        ]);
+      });
+
       test("lexes operators", () => {
         let code = trim(operators.join(" "));
         let tokens = l.lex(code);

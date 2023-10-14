@@ -114,6 +114,8 @@ export default class lexer {
       return this.lex_operator();
     } else if (c.match(/\s/)) {
       return this.lex_whitespace();
+    } else if (c === "$" && next === "{") {
+      return this.lex_interpolation();
     } else if (c === "$") {
       return this.lex_type_identifier();
     } else if (c.match(/[a-zA-Z_]/)) {
@@ -406,6 +408,45 @@ export default class lexer {
     };
   }
 
+  lex_interpolation(): tokens.interpolation_token {
+    this.eat();
+    this.eat();
+
+    let interpolated_start = this.location();
+    let interpolated_end: location | undefined;
+
+    let ts: tokens.token[] = [];
+
+    let depth = 1;
+
+    while (depth > 0 && this.peek()) {
+      let next = this.peek();
+
+      if (next === "{") {
+        depth++;
+      } else if (next === "}") {
+        depth--;
+      }
+
+      if (depth > 0) {
+        ts.push(this.lex_token());
+      } else {
+        interpolated_end = this.location();
+        this.eat();
+      }
+    }
+
+    if (interpolated_end === undefined) {
+      interpolated_end = this.location();
+    }
+
+    return {
+      kind: "interpolation",
+      location: { start: interpolated_start, end: interpolated_end },
+      value: ts,
+    };
+  }
+
   lex_string(): tokens.string_token {
     let start = this.location();
 
@@ -417,55 +458,12 @@ export default class lexer {
       let c = this.peek();
 
       if (c === "$" && this.peek(1) === "{") {
-        this.eat();
-        this.eat();
-
-        let interpolated_start = this.location();
-        let interpolated_end: location | undefined;
-
-        let interpolated_code = "";
-
-        let depth = 1;
-
-        while (depth > 0 && this.peek()) {
-          let next = this.peek();
-
-          if (next === "{") {
-            depth++;
-          } else if (next === "}") {
-            depth--;
-          }
-
-          if (depth > 0) {
-            interpolated_code += this.eat();
-          } else {
-            interpolated_end = this.location();
-            this.eat();
-          }
-        }
-
-        if (interpolated_end === undefined) {
-          interpolated_end = this.location();
-        }
-
-        let l = new lexer();
-
-        let interpolated_value: tokens.interpolated_string_token["value"] =
-          l.lex(interpolated_code, {
-            line: interpolated_start.line,
-            column: interpolated_start.column,
-          });
-
-        let last_token = interpolated_value[interpolated_value.length - 1];
-
-        if (last_token && last_token.kind === "eof") {
-          interpolated_value.pop();
-        }
+        value.push(this.lex_interpolation());
 
         value.push({
-          kind: "interpolated_string",
-          location: { start: interpolated_start, end: interpolated_end },
-          value: interpolated_value,
+          kind: "raw_string",
+          location: { start: this.location(), end: this.location() },
+          value: "",
         });
       } else {
         let last_token = value[value.length - 1];

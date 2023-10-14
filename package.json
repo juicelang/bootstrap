@@ -1,19 +1,21 @@
 {
-  "name": "@juicelang/bootstrap",
-  "module": "./src/index.ts",
-  "type": "module",
-  "scripts": {
-    "start": "bun run src/index.ts",
-    "start:watch": "bun run --watch src/index.ts"
-  },
-  "devDependencies": {
-    "bun-types": "^1.0.1"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  },
-  "dependencies": {
-    "@littlethings/log": "^3.0.6",
-    "arg": "^5.0.2"
-  }
+	"name": "@juicelang/bootstrap",
+	"module": "./src/index.ts",
+	"type": "module",
+	"scripts": {
+		"start": "bun run src/index.ts",
+		"start:watch": "bun run --watch src/index.ts",
+		"test": "bun test",
+		"test:watch": "bun test --watch"
+	},
+	"devDependencies": {
+		"bun-types": "^1.0.1"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	},
+	"dependencies": {
+		"@littlethings/log": "^3.0.6",
+		"arg": "^5.0.2"
+	}
 }
