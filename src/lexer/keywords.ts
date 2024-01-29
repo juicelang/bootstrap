@@ -8,4 +8,5 @@ export const keywords = [
   "data",
   "impl",
   "match",
+  "as",
 ];

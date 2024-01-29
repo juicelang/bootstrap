@@ -33,8 +33,19 @@ export interface macro_identifier_token extends base_token {
   value: string;
 }
 
+export interface macro_body_token extends base_token {
+  kind: "macro_body";
+  value: string;
+}
+
+export interface macro_args_token extends base_token {
+  kind: "macro_args";
+  value: token[];
+}
+
 export interface keyword_token extends base_token {
   kind: "keyword";
+  value: string;
 }
 
 export interface operator_token extends base_token {
@@ -104,6 +115,8 @@ export type token =
   | identifier_token
   | type_identifier_token
   | macro_identifier_token
+  | macro_body_token
+  | macro_args_token
   | keyword_token
   | operator_token
   | boolean_token

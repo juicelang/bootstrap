@@ -963,6 +963,166 @@ describe("Lexer", () => {
     });
   });
 
+  describe("Macros", () => {
+    test("lexes macro args", () => {
+      let code = trim(`
+				log!("hello, world")
+			`);
+      let tokens = l.lex(code);
+
+      expect(tokens).toEqual([
+        {
+          kind: "macro_identifier",
+          location: {
+            start: {
+              line: 1,
+              column: 1,
+            },
+            end: {
+              line: 1,
+              column: 5,
+            },
+          },
+          value: "log!",
+        },
+        {
+          kind: "macro_args",
+          location: {
+            start: {
+              line: 1,
+              column: 5,
+            },
+            end: {
+              line: 1,
+              column: 21,
+            },
+          },
+          value: [
+            {
+              kind: "string",
+              location: {
+                start: {
+                  line: 1,
+                  column: 6,
+                },
+                end: {
+                  line: 1,
+                  column: 20,
+                },
+              },
+              value: [
+                {
+                  kind: "raw_string",
+                  location: {
+                    start: {
+                      line: 1,
+                      column: 7,
+                    },
+                    end: {
+                      line: 1,
+                      column: 19,
+                    },
+                  },
+                  value: "hello, world",
+                },
+              ],
+            },
+          ],
+        },
+        {
+          kind: "eof",
+          location: {
+            start: {
+              line: 1,
+              column: 21,
+            },
+            end: {
+              line: 1,
+              column: 21,
+            },
+          },
+        },
+      ]);
+    });
+
+    test("lexes macro bodies", () => {
+      let code = trim(`
+				jsx! {
+					<div>
+						The current count is: {counter}
+
+						<button on_click={handle_increment}>Increment</button>
+						<button on_click={handle_decrement}>Decrement</button>
+
+						<hr />
+
+						<span>Version: {version}</span>
+					</div>
+				}
+			`);
+      let tokens = l.lex(code);
+
+      expect(tokens).toEqual([
+        {
+          kind: "macro_identifier",
+          location: {
+            start: {
+              line: 1,
+              column: 1,
+            },
+            end: {
+              line: 1,
+              column: 5,
+            },
+          },
+          value: "jsx!",
+        },
+        {
+          kind: "whitespace",
+          location: {
+            start: {
+              line: 1,
+              column: 5,
+            },
+            end: {
+              line: 1,
+              column: 6,
+            },
+          },
+          value: " ",
+        },
+        {
+          kind: "macro_body",
+          location: {
+            start: {
+              line: 1,
+              column: 6,
+            },
+            end: {
+              line: 12,
+              column: 6,
+            },
+          },
+          value:
+            "\n\t\t\t\t\t<div>\n\t\t\t\t\t\tThe current count is: {counter}\n\n\t\t\t\t\t\t<button on_click={handle_increment}>Increment</button>\n\t\t\t\t\t\t<button on_click={handle_decrement}>Decrement</button>\n\n\t\t\t\t\t\t<hr />\n\n\t\t\t\t\t\t<span>Version: {version}</span>\n\t\t\t\t\t</div>\n\t\t\t\t",
+        },
+        {
+          kind: "eof",
+          location: {
+            start: {
+              line: 12,
+              column: 6,
+            },
+            end: {
+              line: 12,
+              column: 6,
+            },
+          },
+        },
+      ]);
+    });
+  });
+
   describe("Examples", () => {
     test("lexes hello world", () => {
       let code = trim(`

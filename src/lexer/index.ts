@@ -8,6 +8,7 @@ export default class lexer {
   line = 1;
   column = 1;
   code = "";
+  ts: tokens.token[] = [];
 
   location(): location {
     return {
@@ -35,6 +36,20 @@ export default class lexer {
     let c = this.code[this.cursor + offset];
 
     return c;
+  }
+
+  prev_non_whitespace_token() {
+    for (let i = this.ts.length - 1; i > -1; i--) {
+      const t = this.ts[i];
+
+      if (t.kind === "whitespace") {
+        continue;
+      }
+
+      return t;
+    }
+
+    return null;
   }
 
   whitespace() {
@@ -68,39 +83,65 @@ export default class lexer {
     this.column = column;
     this.code = code;
 
-    let ts: tokens.token[] = [];
+    this.ts = [];
+
+    while (
+      this.cursor < this.code.length - 1 &&
+      this.code[this.cursor] === "#" &&
+      this.code[this.cursor + 1] === "!"
+    ) {
+      // consume the whole line
+      while (this.peek() && this.peek() !== "\n") {
+        this.eat();
+      }
+
+      this.eat();
+    }
 
     while (this.cursor < this.code.length) {
       let t = this.lex_token();
 
-      ts.push(t);
+      this.ts.push(t);
 
       if (t.kind === "eof") {
         break;
       }
     }
 
-    let last_token = ts[ts.length - 1];
+    let last_token = this.ts[this.ts.length - 1];
 
     if (!last_token || last_token.kind !== "eof") {
-      ts.push({
+      this.ts.push({
         kind: "eof",
         location: { start: this.location(), end: this.location() },
       });
     }
 
-    return ts;
+    return this.ts;
   }
 
   lex_token(): tokens.token {
+    const prev = this.prev_non_whitespace_token();
+
     let c = this.peek();
     let next = this.peek(1);
 
     if (c === "{") {
+      if (
+        (prev && prev.kind === "macro_args") ||
+        prev.kind === "macro_identifier"
+      ) {
+        return this.lex_macro_body();
+      }
+
       return this.lex_open_curly();
     } else if (c === "}") {
       return this.lex_close_curly();
     } else if (c === "(") {
+      if (prev && prev.kind === "macro_identifier") {
+        return this.lex_macro_args();
+      }
+
       return this.lex_open_paren();
     } else if (c === ")") {
       return this.lex_close_paren();
@@ -498,5 +539,67 @@ export default class lexer {
       location: { start, end },
       value,
     };
+  }
+
+  lex_macro_body(): tokens.macro_body_token {
+    const start = this.location();
+
+    this.eat();
+
+    let depth = 1;
+
+    let value = "";
+
+    while (depth > 0 && this.peek()) {
+      let next = this.peek();
+
+      if (next === "{") {
+        depth++;
+      } else if (next === "}") {
+        depth--;
+      }
+
+      if (depth > 0) {
+        value += this.eat();
+
+        if (next === "\\" && this.peek()) {
+          value += this.eat();
+        }
+      }
+    }
+
+    this.eat();
+
+    const end = this.location();
+
+    return {
+      kind: "macro_body",
+      location: { start, end },
+      value,
+    };
+  }
+
+  lex_macro_args() {
+    const start = this.location();
+
+    this.eat();
+
+    const value: tokens.token[] = [];
+
+    while (this.cursor < this.code.length) {
+      const c = this.peek();
+
+      if (c === ")") {
+        break;
+      }
+
+      value.push(this.lex_token());
+    }
+
+    this.eat();
+
+    const end = this.location();
+
+    return { kind: "macro_args", location: { start, end }, value };
   }
 }

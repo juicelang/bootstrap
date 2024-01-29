@@ -3,6 +3,7 @@ import * as tokens from "@/lexer/tokens";
 import * as nodes from "./ast";
 import lexer from "@/lexer";
 import { todo } from "@/util/todo";
+import log from "@/log";
 
 export default class parser {
   cursor = 0;
@@ -95,11 +96,15 @@ export default class parser {
   }
 
   parse_node(): nodes.node {
+    this.eat_whitespace();
+
     let t = this.peek();
 
     switch (t.kind) {
       default:
         return this.parse_statement();
+      case "comment":
+        return this.parse_comment_node();
     }
   }
 
@@ -112,8 +117,11 @@ export default class parser {
       default:
         value = this.parse_expression();
         break;
+      case "keyword":
+        value = this.parse_keyword();
+        break;
       case "eof":
-        throw new Error(`Unexpected end of file`);
+        todo("parse_statement: eof");
         break;
     }
 
@@ -170,6 +178,8 @@ export default class parser {
     is_function_argument = false,
     is_unary_expression = false,
   } = {}): nodes.value_expression_node {
+    this.eat_whitespace();
+
     let start = this.peek();
     let end: { location: { start: location; end: location } } = start;
 
@@ -303,6 +313,125 @@ export default class parser {
       kind: "identifier",
       value,
       location: this.location(start, end),
+    };
+  }
+
+  parse_comment_node(): nodes.comment_node {
+    const t = this.eat() as tokens.comment_token;
+
+    return {
+      kind: "comment",
+      value: t.value,
+      location: t.location,
+    };
+  }
+
+  parse_keyword() {
+    const keyword = this.peek();
+
+    switch (keyword.value) {
+      case "import":
+        return this.parse_import_node();
+      default:
+        throw new Error(`Unexpected keyword: ${keyword.value}`);
+    }
+  }
+
+  parse_import_node(): nodes.import_node {
+    const keyword = this.eat() as tokens.keyword_token;
+
+    this.eat_whitespace();
+
+    let identifier = [];
+
+    while (this.cursor < this.tokens.length) {
+      const t = this.peek();
+
+      if (t.kind !== "identifier") {
+        break;
+      }
+
+      identifier.push(this.eat());
+
+      const next = this.peek();
+      const next_next = this.peek(1);
+
+      if (
+        next.kind === "operator" &&
+        next.value === "." &&
+        next_next.kind === "identifier"
+      ) {
+        this.eat();
+      }
+    }
+
+    this.eat_whitespace();
+
+		let has_import_as = false;
+
+    const as = this.peek();
+
+    if (as && as.kind === "keyword" && as.value === "as") {
+			has_import_as = true;
+      this.eat();
+      this.eat_whitespace();
+    }
+
+		let has_expose = false;
+
+    const open_paren = this.peek();
+
+    const expose: nodes.identifier_node[] = [];
+
+    if (open_paren && open_paren.kind === "open_paren") {
+			has_expose = true;
+
+      this.eat();
+      this.eat_whitespace();
+
+      while (this.cursor < this.tokens.length) {
+        this.eat_whitespace();
+
+        const t = this.peek();
+
+        if (
+          t.kind !== "identifier" &&
+          t.kind !== "macro_identifier" &&
+          t.kind !== "type_identifier"
+        ) {
+          break;
+        }
+
+        expose.push(this.eat() as tokens.identifier_token);
+        this.eat_whitespace();
+
+        const next = this.peek();
+
+        if (next.kind === "operator" && next.value === ",") {
+          this.eat();
+        }
+      }
+    }
+
+    const close_paren = this.peek();
+
+    if (has_expose && (!close_paren || close_paren.kind !== "close_paren")) {
+      console.log(close_paren);
+      throw new Error(
+        `Expected a close paren after import statement, but got ${close_paren.kind}`,
+      );
+    }
+
+    this.eat();
+
+    return {
+      type: "import",
+      value: {
+        identifier,
+        as: has_import_as ? as : null,
+        expose,
+      },
+      location: this.location(keyword, close_paren),
     };
   }
 }

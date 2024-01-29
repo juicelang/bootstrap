@@ -49,7 +49,7 @@ fn get_app_version!() -> future(token_stream) {
 	version := quote!(package.version)
 
 	tokens! {
-		#{version}
+  	#{version}
 	}
 }
 

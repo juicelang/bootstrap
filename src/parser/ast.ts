@@ -1,5 +1,9 @@
 import { location } from "@/lexer/location";
-import { identifier_token } from "@/lexer/tokens";
+import {
+  identifier_token,
+  macro_identifier_token,
+  type_identifier_token,
+} from "@/lexer/tokens";
 
 export interface root_node {
   kind: "program";
@@ -88,6 +92,19 @@ export interface statement_node extends base_node {
 }
 
 export type primitive_node = string_node | number_node;
+
+export interface import_node extends base_node {
+  kind: "import";
+  value: {
+    identifier: identifier_token[];
+    as: identifier_token | null;
+    expose: (
+      | identifier_token
+      | macro_identifier_token
+      | type_identifier_token
+    )[];
+  };
+}
 
 export type node =
   | string_node
