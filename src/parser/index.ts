@@ -318,7 +318,10 @@ export default class parser {
             kind: "type_assignment",
             left: root_sub_expression.value,
             right: value,
-            location: this.location(root_sub_expression, last),
+            location: this.location(
+              root_sub_expression,
+              last ?? root_sub_expression,
+            ),
           } as nodes.type_assignment_node;
         }
 
@@ -1060,6 +1063,13 @@ export default class parser {
   parse_function_node(): nodes.function_node {
     const keyword = this.eat() as tokens.keyword_token;
 
+    let is_static = keyword.value === "static";
+
+    if (is_static) {
+      this.eat_whitespace();
+      this.eat();
+    }
+
     this.eat_whitespace();
 
     const next = this.peek();
@@ -1126,7 +1136,7 @@ export default class parser {
       args,
       body,
       return_type,
-      static: false,
+      static: is_static,
       location: this.location(keyword, body),
     };
   }

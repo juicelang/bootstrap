@@ -1,0 +1,13 @@
+foreign import .std.io as foreign_io
+
+export 'stdout := {}
+
+impl stdout {
+	static fn write(message) {
+		foreign_io.stdout.write(message)
+	}
+
+	static fn write_line(message) {
+		stdout.write("${message}\n")
+	}
+}

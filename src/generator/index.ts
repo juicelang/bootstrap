@@ -33,6 +33,8 @@ export default class generator {
 
   id_counter: number = 0;
 
+  export_type: boolean = false;
+
   generate(
     namespace: string,
     module_name: string,
@@ -194,7 +196,7 @@ export default class generator {
     let module_name = module_name_parts.join(".");
 
     if (import_node.internal) {
-      module_name = this.namespace + "." + this.module_name + "." + module_name;
+      module_name = this.namespace + "." + module_name;
     }
 
     if (import_node.foreign) {
@@ -221,6 +223,16 @@ export default class generator {
   }
 
   generate_export(export_node: nodes.export_node): string {
+    if (
+      export_node.value.kind === "statement" &&
+      export_node.value.value.kind === "type_assignment"
+    ) {
+      this.export_type = true;
+      this.generate_statement(export_node.value);
+      this.export_type = false;
+      return "";
+    }
+
     return `export ${this.generate_statement(export_node.value)}`;
   }
 
@@ -246,11 +258,22 @@ export default class generator {
     }
 
     if (Array.isArray(value)) {
-      return value
-        .map((type_constructor) =>
-          this.generate_type_constructor(name, type_constructor),
-        )
-        .join("\n");
+      if (value.length === 0) {
+        return this.generate_type_constructor(name, {
+          kind: "type_constructor",
+          // @ts-expect-error
+          name: left,
+          args: [],
+          location: left.location,
+          is_shorthand: true,
+        });
+      } else {
+        return value
+          .map((type_constructor) =>
+            this.generate_type_constructor(name, type_constructor),
+          )
+          .join("\n");
+      }
     } else {
       console.warn("generate_type_assignment non-runtime value");
     }
@@ -279,11 +302,13 @@ export default class generator {
 
     const function_name = `${sanitized_type_name}__${sanitized_name}`;
 
+    const do_export = this.export_type ? "export " : "";
+
     if (
       !type_constructor.is_shorthand &&
       !this.registered_types.includes(sanitized_type_name)
     ) {
-      const setup = `const ${sanitized_type_name} = Object.create(null)`;
+      const setup = `${do_export}const ${sanitized_type_name} = Object.create(null)`;
 
       this.emit_types(setup);
       this.registered_types.push(sanitized_type_name);
@@ -294,7 +319,7 @@ export default class generator {
       : `${sanitized_type_name}.${sanitized_name}`;
 
     const create_or_access = type_constructor.is_shorthand
-      ? `const ${access}`
+      ? `${do_export}const ${access}`
       : `${access}`;
 
     const result = `${create_or_access} = function ${function_name}(${parameters.join(
@@ -502,12 +527,21 @@ for (let __i = ${from}; (${id} ? __i < ${to} : __i > ${to}); (${id} ? __i++ : __
         ? `${name}.${method_name}`
         : `${name}.prototype.${method_name}`;
 
-      const result = `${access} = function() {
+      let result = "";
+      if (function_node.static) {
+        result = `${access} = function() {
+	return (function${name ? ` __${method_name}` : ""}(${parameters.join(", ")}) {
+		${body}
+	})(...arguments);
+}`;
+      } else {
+        result = `${access} = function() {
 	const self = this;
-	return (function${name ? ` ${name}` : ""}(${parameters.join(", ")}) {
+	return (function${name ? ` __${method_name}` : ""}(${parameters.join(", ")}) {
 		${body}
 	})(self, ...arguments);
 }`;
+      }
 
       methods.push(result);
     }

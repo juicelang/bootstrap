@@ -528,7 +528,25 @@ export default class lexer {
         let c = this.eat();
 
         if (c === "\\") {
-          c = this.eat();
+          let t = this.peek();
+
+          switch (t) {
+            default:
+              c = this.eat();
+              break;
+            case "n":
+              c = "\n";
+              this.eat();
+              break;
+            case "r":
+              c = "\r";
+              this.eat();
+              break;
+            case "t":
+              c = "\t";
+              this.eat();
+              break;
+          }
         }
 
         if (last_token && last_token.kind === "raw_string") {

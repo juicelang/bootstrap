@@ -70,11 +70,26 @@ try {
       }
 
       const parts = import_node.identifier.map(g.generate_identifier);
+      const import_path = path.join(entry_dirname, ...parts);
 
-      const import_path = path.join(entry_dirname, ...parts) + ".juice";
+      if (import_node.foreign) {
+        const import_file = `${import_path}.js`;
 
-      if (!known_files.has(import_path)) {
-        source_files.push(import_path);
+        if (!known_files.has(import_file)) {
+          known_files.add(import_file);
+          const text = await fs.readFile(import_file, "utf-8");
+
+          const output_file = `${namespace}.${parts.join(".")}__foreign.js`;
+
+          await fs.writeFile(path.resolve(output_dirname, output_file), text);
+        }
+      } else {
+        const import_file = `${import_path}.juice`;
+
+        if (!known_files.has(import_file)) {
+          known_files.add(import_file);
+          source_files.push(import_file);
+        }
       }
     }
   }
