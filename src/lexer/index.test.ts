@@ -1,4 +1,6 @@
 import { describe, test, expect, beforeEach } from "bun:test";
+import { file } from "bun";
+import path from "node:path";
 import lexer from "./index";
 import { operators } from "./operators";
 import * as tokens from "./tokens";
@@ -1135,6 +1137,19 @@ describe("Lexer", () => {
       let tokens = l.lex(code);
 
       expect(tokens).toMatchSnapshot();
+    });
+
+    test("all.juice", async () => {
+      const code = await file(
+        path.resolve(__dirname, "../../examples/all.juice"),
+      );
+      const text = await code.text();
+
+      expect(() => {
+        const tokens = l.lex(text);
+
+        expect(tokens).toMatchSnapshot();
+      }).not.toThrow();
     });
   });
 });

@@ -128,8 +128,9 @@ export default class lexer {
 
     if (c === "{") {
       if (
-        (prev && prev.kind === "macro_args") ||
-        prev.kind === "macro_identifier"
+        prev !== null &&
+        ((prev && prev.kind === "macro_args") ||
+          prev.kind === "macro_identifier")
       ) {
         return this.lex_macro_body();
       }
@@ -157,7 +158,7 @@ export default class lexer {
       return this.lex_whitespace();
     } else if (c === "$" && next === "{") {
       return this.lex_interpolation();
-    } else if (c === "$") {
+    } else if (c === "$" || c === "'") {
       return this.lex_type_identifier();
     } else if (c.match(/[a-zA-Z_]/)) {
       return this.lex_identifier();
@@ -282,7 +283,8 @@ export default class lexer {
   lex_identifier():
     | tokens.identifier_token
     | tokens.macro_identifier_token
-    | tokens.keyword_token {
+    | tokens.keyword_token
+    | tokens.boolean_token {
     let start = this.location();
     let value = this.eat();
     let kind:
@@ -306,6 +308,14 @@ export default class lexer {
     }
 
     let end = this.location();
+
+    if (value === "true" || value === "false") {
+      return {
+        kind: "boolean",
+        location: { start, end },
+        value: value === "true",
+      };
+    }
 
     return {
       kind,
@@ -579,7 +589,7 @@ export default class lexer {
     };
   }
 
-  lex_macro_args() {
+  lex_macro_args(): tokens.macro_args_token {
     const start = this.location();
 
     this.eat();

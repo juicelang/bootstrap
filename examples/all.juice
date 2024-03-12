@@ -1,41 +1,43 @@
 #!/usr/bin/env juice
 
-// Imports are specified with reverse comain names.
+// Imports are specified with reverse domain names.
 // Specific exports can be imported within parenthesis at the end of the import statement.
+import dev.juice.core
 import dev.juice.fs (read_file)
-import dev.juice.type (validate)
-import dev.juice.type.result (result)
-import dev.juice.type.default (default)
-import dev.juice.type.string (quote!)
-import dev.juice.macro (tokens!, run!, token_stream, macro_body)
+import dev.juice.type (validate, result, default)
+import dev.juice.macro (quote!, tokens!, run!, token_stream, macro_body)
 import dev.juice.web.browser (query_selector, element)
-import dev.juice.react (render, jsx!, react_node, use_state, dispatch)
+import dev.react (render, jsx!, react_node, use_state, dispatch)
 
 // Modules can be aliased with `as` to access all exported members.
 import dev.juice.json as json
 
-// Data types can be declared at the base level of a file.
-data package {
+// Types can be declared at the base level of a file.
+'package := {
 	// Comments above fields populate documentation.
-	version: string,
+	version: string
 }
 
 impl default for package {
 	fn default(self: package) -> string {
-		package { version = "0.0.0" }
+		// Types with a single constructor do not have to specify which one
+		// they are using. Otherwise we'd have things like `package.package`
+		// everywhere.
+		package(version: "0.0.0")
 	}
 }
 
 // Async functions are declared by returning a future type.
 fn get_package() -> future(result(package)) {
 	// To await a value, use the `await` property of a future.
-	text = read_file("./package.json").await?
+	// The `?` operator will return the error side of the result early.
+	text := read_file("./package.json").await?
 
   // Runtime values can have their type validated.
-	data: package = validate(
-		$type: package,
+	data = validate(
+		package,
 		json.parse(text),
-		{ permissive = true }
+		permissive: true
 	)?
 
   // Returns are implicit when the function has a return type.
@@ -44,49 +46,61 @@ fn get_package() -> future(result(package)) {
 }
 
 fn get_app_version!() -> future(token_stream) {
-  // Other unwrap options are `unwrap()`, `unwrap_or("value")`, and `unwrap_else(fn () -> string { "value" })`
-	package := get_package().await.unwrap_default()
+  // Other unwrap options are `unwrap("fallback")`, `unwrap_default()`, and `unwrap_else(fn () -> string { "value" })`
+	package := get_package().await?
 	version := quote!(package.version)
 
-	tokens! {
-  	#{version}
-	}
+	//tokens! {
+  //	#{version}
+	//}
 }
 
 // Variables declared outside of functions are expected to be constants.
 version := get_app_version!()
 
 // Type aliases can be declared at the base level of a file.
-type counter_state = (number, dispatch(number))
+'counter_state := (number, dispatch(number))
 
 fn app() -> react_node {
 	// Multiple return values via tuple
-	(counter, set_counter): counter_state = use_state(0)
+	//(counter, set_counter): counter_state = use_state(0)
 
 	fn handle_increment() {
 		set_counter(fn (prev: number) -> number { prev + 1 })
 	}
 
 	fn handle_decrement() {
-		set_counter(fn (prev: number) -> number { prev - 1 })
+		set_counter(fn (prev: number) -> number {
+			next := prev - 1
+
+			if next < 0 {
+				0
+			} else {
+				next
+			}
+		})
 	}
 
-	jsx! {
-		<div>
-			The current count is: {counter}
-
-			<button on_click={handle_increment}>Increment</button>
-			<button on_click={handle_decrement}>Decrement</button>
-
-			<hr />
-
-			<span>Version: {version}</span>
-		</div>
-	}
+	// Juice Semantic XML macro
+	//jsx! {
+	//	<div>
+	//		The current count is: {counter}
+	//
+	//		<button on_click={handle_increment}>Increment</button>
+	//		<button on_click={handle_decrement}>Decrement</button>
+	//
+	//		<hr />
+	//
+	//		<span>Version: {version}</span>
+	//	</div>
+	//}
 }
 
 export fn main() {
-	root: element = query_selector("#root").or_panic("No element with ID \"root\" found.")
+	root: element = query_selector("#root").unwrap_or_panic("No element with ID \"root\" found.")
 
-	render(root, jsx! { <app /> })
+	render(
+	root
+	// jsx! { <app /> }
+	)
 }
