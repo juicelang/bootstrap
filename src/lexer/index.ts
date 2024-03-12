@@ -419,6 +419,10 @@ export default class lexer {
         break;
       }
 
+      if (c === "." && next && next === ".") {
+        break;
+      }
+
       if (c === ".") {
         variant = "float";
       }

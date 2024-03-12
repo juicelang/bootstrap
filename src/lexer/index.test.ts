@@ -954,10 +954,38 @@ describe("Lexer", () => {
             },
           },
           {
+            kind: "whitespace",
+            location: {
+              start: {
+                line: 1,
+                column: 69,
+              },
+              end: {
+                line: 1,
+                column: 70,
+              },
+            },
+            value: " ",
+          },
+          {
+            kind: "operator",
+            location: {
+              start: {
+                line: 1,
+                column: 70,
+              },
+              end: {
+                line: 1,
+                column: 72,
+              },
+            },
+            value: "..",
+          },
+          {
             kind: "eof",
             location: {
-              start: { line: 1, column: 69 },
-              end: { line: 1, column: 69 },
+              start: { line: 1, column: 72 },
+              end: { line: 1, column: 72 },
             },
           },
         ] satisfies tokens.token[]);

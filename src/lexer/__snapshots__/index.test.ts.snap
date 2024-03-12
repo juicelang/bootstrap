@@ -2443,7 +2443,7 @@ exports[`Lexer Examples all.juice 1`] = `
     "value": " ",
   },
   {
-    "kind": "identifier",
+    "kind": "keyword",
     "location": {
       "end": {
         "column": 17,
@@ -3592,7 +3592,7 @@ exports[`Lexer Examples all.juice 1`] = `
 ,
   },
   {
-    "kind": "keyword",
+    "kind": "identifier",
     "location": {
       "end": {
         "column": 6,
@@ -4030,7 +4030,7 @@ exports[`Lexer Examples all.juice 1`] = `
 ,
   },
   {
-    "kind": "keyword",
+    "kind": "identifier",
     "location": {
       "end": {
         "column": 6,

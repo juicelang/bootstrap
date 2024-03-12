@@ -91,7 +91,10 @@ export interface value_expression_node extends base_node {
     | expression_node
     | function_node
     | block_node
-    | type_identifier_node;
+    | type_identifier_node
+    | function_call_node
+    | if_node
+    | list_node;
 }
 
 export interface type_value_expression_node extends base_node {
@@ -154,20 +157,38 @@ export interface statement_node extends base_node {
   value:
     | expression_node
     | import_node
+    | export_node
     | assignment_node
     | type_assignment_node
     | function_node
     | if_node
-    | eof_node;
+    | eof_node
+    | function_call_node
+    | for_node
+    | impl_node;
 }
 
 export type primitive_node = string_node | number_node | boolean_node;
+
+export interface impl_node extends base_node {
+  kind: "impl";
+  type: expression_node | null;
+  target: expression_node;
+  methods: function_node[];
+}
 
 export interface import_node extends base_node {
   kind: "import";
   identifier: identifier_node[];
   as: identifier_node | null;
   expose: (identifier_node | macro_identifier_node | type_identifier_node)[];
+  foreign: boolean;
+  internal: boolean;
+}
+
+export interface export_node extends base_node {
+  kind: "export";
+  value: statement_node;
 }
 
 export interface tuple_node extends base_node {
@@ -207,6 +228,7 @@ export interface function_node extends base_node {
   args: function_argument_node[];
   body: block_node;
   return_type: expression_node | null;
+  static: boolean;
 }
 
 export interface function_argument_node extends base_node {
@@ -217,6 +239,18 @@ export interface function_argument_node extends base_node {
   default: expression_node | null;
 }
 
+export interface function_call_node extends base_node {
+  kind: "function_call";
+  target: expression_node;
+  args: function_call_argument_node[];
+}
+
+export interface function_call_argument_node extends base_node {
+  kind: "function_call_argument";
+  name: type_identifier_node | identifier_node | null;
+  value: expression_node;
+}
+
 export interface if_node extends base_node {
   kind: "if";
   condition: expression_node;
@@ -224,9 +258,31 @@ export interface if_node extends base_node {
   else: if_node | block_node | null;
 }
 
+export interface for_node extends base_node {
+  kind: "for";
+  identifier: expression_node | null;
+  iterable: expression_node | range_node | null;
+  body: block_node;
+}
+
+export interface break_node extends base_node {
+  kind: "break";
+}
+
+export interface range_node extends base_node {
+  kind: "range";
+  from: expression_node;
+  to: expression_node;
+}
+
 export interface block_node extends base_node {
   kind: "block";
   value: statement_node[];
+}
+
+export interface list_node extends base_node {
+  kind: "list";
+  value: expression_node[];
 }
 
 export type node =
@@ -264,4 +320,12 @@ export type node =
   | type_constructor_node
   | type_constructor_argument_node
   | if_node
-  | eof_node;
+  | eof_node
+  | function_call_node
+  | function_call_argument_node
+  | export_node
+  | for_node
+  | range_node
+  | break_node
+  | list_node
+  | impl_node;

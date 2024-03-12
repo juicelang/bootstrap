@@ -84,7 +84,9 @@ const pretty = (node: nodes.node | nodes.type_constructor_node[]): string => {
     case "type_identifier":
       return node.value.map(pretty).join(".");
     case "import": {
-      let text = `import ${node.identifier.map(pretty).join(".")}`;
+      let text = `${node.foreign ? "foreign " : ""}import ${
+        node.internal ? "." : ""
+      }${node.identifier.map(pretty).join(".")}`;
 
       if (node.as) {
         text += ` as ${pretty(node.as)}`;
@@ -96,6 +98,8 @@ const pretty = (node: nodes.node | nodes.type_constructor_node[]): string => {
 
       return text;
     }
+    case "export":
+      return `export ${pretty(node.value)}`;
     case "interpolation":
       return `\${${pretty(node.value)}}`;
     case "function":
@@ -129,6 +133,30 @@ const pretty = (node: nodes.node | nodes.type_constructor_node[]): string => {
       return `if ${pretty(node.condition)} ${pretty(node.body)}${
         node.else ? ` else ${pretty(node.else)}` : ""
       }`;
+    case "function_call":
+      return `${pretty(node.target)}(${node.args.map(pretty).join(", ")})`;
+    case "function_call_argument":
+      return `${node.name ? `${pretty(node.name)}: ` : ""}${pretty(
+        node.value,
+      )}`;
+    case "for": {
+      if (node.identifier && node.iterable) {
+        return `for ${pretty(node.identifier)} of ${pretty(
+          node.iterable,
+        )} ${pretty(node.body)}`;
+      }
+      if (node.identifier && !node.iterable) {
+        return `for ${pretty(node.identifier)} ${pretty(node.body)}`;
+      }
+      if (!node.identifier && node.iterable) {
+        return `for ${pretty(node.iterable)} ${pretty(node.body)}`;
+      }
+      return `for ${pretty(node.body)}`;
+    }
+    case "range":
+      return `${pretty(node.from)}..${pretty(node.to)}`;
+    case "break":
+      return "break";
   }
 };
 
@@ -200,6 +228,25 @@ y: int
       const expression_node = node.value as nodes.expression_node;
 
       expect(pretty(expression_node)).toBe(`'x := {
+y(value: int)
+z(value: string)
+}`);
+    });
+
+    test("parses type constructors with generic", () => {
+      let code = trim(juice`'x(a) := {
+				y(value: int)
+				z(value: string)
+			}`);
+      let ast = p.parse(code);
+
+      expect_statement(ast.body[0]);
+
+      const node = ast.body[0] as nodes.statement_node;
+
+      const expression_node = node.value as nodes.expression_node;
+
+      expect(pretty(expression_node)).toBe(`'x(a) := {
 y(value: int)
 z(value: string)
 }`);
@@ -422,6 +469,34 @@ z(value: string)
         `import dev.juice.core as core (f, my_macro!, something_else)`,
       );
     });
+
+    test("parses foreign imports", () => {
+      let code = trim(`foreign import .x.y.z`);
+      let ast = p.parse(code);
+
+      expect_statement(ast.body[0]);
+
+      const node = ast.body[0] as nodes.statement_node;
+
+      const expression_node = node.value;
+
+      expect(pretty(expression_node)).toBe(`foreign import .x.y.z`);
+    });
+  });
+
+  describe("Exports", () => {
+    test("parses a simple export", () => {
+      let code = trim(`export x := 1`);
+      let ast = p.parse(code);
+
+      expect_statement(ast.body[0]);
+
+      const node = ast.body[0] as nodes.statement_node;
+
+      const expression_node = node.value;
+
+      expect(pretty(expression_node)).toBe(`export x := 1`);
+    });
   });
 
   describe("Variables", () => {
@@ -540,6 +615,21 @@ x := 1
 (x + 2)
 }`);
     });
+
+    test("parses a function as an expression", () => {
+      let code = trim(`request.on_success(fn (response) {
+	stdout.write_line(response.body)
+})`);
+      let ast = p.parse(code);
+
+      expect_statement(ast.body[0]);
+
+      const node = ast.body[0] as nodes.statement_node;
+
+      expect(pretty(node.value)).toBe(`request.on_success(fn(response) {
+stdout.write_line(response.body)
+})`);
+    });
   });
 
   describe("Conditionals", () => {
@@ -599,6 +689,73 @@ y := 2
 y := 1
 } else if false {
 y := 2
+}`);
+    });
+  });
+
+  describe("Loops", () => {
+    test("parses a for loop", () => {
+      let code = trim(`for x of xs {
+			}`);
+      let ast = p.parse(code);
+
+      expect_statement(ast.body[0]);
+
+      const node = ast.body[0] as nodes.statement_node;
+
+      const expression_node = node.value as nodes.expression_node;
+
+      expect(pretty(expression_node)).toBe(`for x of xs {
+
+}`);
+    });
+
+    test("parses a for range loop", () => {
+      let code = trim(`for x of 0..10 {
+			}`);
+      let ast = p.parse(code);
+
+      expect_statement(ast.body[0]);
+
+      const node = ast.body[0] as nodes.statement_node;
+
+      const expression_node = node.value as nodes.expression_node;
+
+      expect(pretty(expression_node)).toBe(`for x of 0..10 {
+
+}`);
+    });
+
+    test("parses a for loop without item", () => {
+      let code = trim(`for 0..10 {
+			}`);
+      let ast = p.parse(code);
+
+      expect_statement(ast.body[0]);
+
+      const node = ast.body[0] as nodes.statement_node;
+
+      const expression_node = node.value as nodes.expression_node;
+
+      expect(pretty(expression_node)).toBe(`for 0..10 {
+
+}`);
+    });
+
+    test("parses a bare for loop", () => {
+      let code = trim(`for {
+				break
+			}`);
+      let ast = p.parse(code);
+
+      expect_statement(ast.body[0]);
+
+      const node = ast.body[0] as nodes.statement_node;
+
+      const expression_node = node.value as nodes.expression_node;
+
+      expect(pretty(expression_node)).toBe(`for {
+break
 }`);
     });
   });

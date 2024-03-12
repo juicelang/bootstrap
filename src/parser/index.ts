@@ -147,10 +147,14 @@ export default class parser {
         });
         break;
       case "keyword":
+        // @ts-expect-error
         value = this.parse_keyword();
         break;
       case "eof":
-        return todo("parse_statement: eof");
+        value = {
+          kind: "eof",
+          location: t.location,
+        };
     }
 
     return {
@@ -199,6 +203,13 @@ export default class parser {
       }
 
       if (this.is_whitespace_multiline()) {
+        break;
+      }
+
+      if (
+        next.kind === "operator" &&
+        (next.value === ".." || next.value === ",")
+      ) {
         break;
       }
 
@@ -265,6 +276,31 @@ export default class parser {
         this.eat_whitespace();
         this.eat();
         this.eat_whitespace();
+
+        if (
+          is_statement &&
+          // @ts-expect-error
+          root_sub_expression.kind === "function_call" &&
+          // @ts-expect-error
+          root_sub_expression.target.value.kind === "value_expression" &&
+          // @ts-expect-error
+          root_sub_expression.target.value.value.kind === "type_identifier"
+        ) {
+          const value = this.parse_type_assignment_value(
+            // @ts-expect-error
+            root_sub_expression.target.value.value,
+          );
+
+          const last = Array.isArray(value) ? value[value.length - 1] : value;
+
+          // @ts-expect-error
+          return {
+            kind: "type_assignment",
+            left: root_sub_expression,
+            right: value,
+            location: this.location(root_sub_expression, last),
+          } as nodes.type_assignment_node;
+        }
 
         if (
           is_statement &&
@@ -353,13 +389,100 @@ export default class parser {
       }
 
       if (next.kind === "open_paren") {
+        const next = this.peek();
+
+        if (next.kind === "whitespace") {
+          continue;
+        }
+
+        const args: nodes.function_call_argument_node[] = [];
+
         this.eat_whitespace();
+        const open_paren = this.eat();
 
-        current_precedence = 0;
+        while (this.cursor < this.tokens.length) {
+          this.eat_whitespace();
+          let next = this.peek();
+          if (next.kind === "close_paren") {
+            break;
+          }
 
-        // This may not actually be a function call since it can be
-        // preceded by whitespace.
-        return todo("parse_expression: function call");
+          let name: nodes.type_identifier_node | nodes.identifier_node | null =
+            null;
+
+          const colon = this.peek(1);
+
+          if (colon.kind === "operator" && colon.value === ":") {
+            if (next.kind === "type_identifier") {
+              name = this.parse_type_identifier_node();
+            } else {
+              name = this.parse_identifier_node();
+            }
+
+            this.eat_whitespace();
+            this.eat();
+          }
+
+          this.eat_whitespace();
+
+          const value = this.parse_expression({
+            is_function_argument: true,
+          });
+
+          args.push({
+            kind: "function_call_argument",
+            name,
+            value,
+            location: this.location(name ?? value, value),
+          });
+
+          this.eat_whitespace();
+
+          const comma = this.peek();
+          if (comma.kind === "operator" && comma.value === ",") {
+            this.eat();
+          }
+        }
+
+        const close_paren = this.peek();
+        if (close_paren.kind !== "close_paren") {
+          throw new Error(`Expected a close paren after function call`);
+        }
+        this.eat();
+
+        if (last_binary_expression) {
+          const right_sub_expression = last_binary_expression.value[1]!;
+          const new_right_sub_expression: nodes.function_call_node = {
+            kind: "function_call",
+            args,
+            target: {
+              kind: "expression",
+              value: right_sub_expression,
+              location: right_sub_expression.location,
+            },
+            location: this.location(right_sub_expression, right_sub_expression),
+          };
+          last_binary_expression.value[1] =
+            new_right_sub_expression as unknown as nodes.sub_expression_node;
+        } else if (root_sub_expression.kind === "value_expression") {
+          const new_root_sub_expression: nodes.function_call_node = {
+            kind: "function_call",
+            args,
+            target: {
+              kind: "expression",
+              value: root_sub_expression,
+              location: root_sub_expression.location,
+            },
+            location: root_sub_expression.location,
+          };
+
+          root_sub_expression =
+            new_root_sub_expression as unknown as nodes.sub_expression_node;
+        } else {
+          return todo(
+            `parse_expression: function call for ${root_sub_expression.kind}`,
+          );
+        }
 
         continue;
       }
@@ -470,6 +593,17 @@ export default class parser {
         } else {
           throw new Error(`Unexpected type identifier: ${t.value}`);
         }
+      case "keyword":
+        if (t.value === "import") {
+          throw new Error(`Unexpected import keyword`);
+        }
+        value = this.parse_keyword() as nodes.function_node | nodes.if_node;
+        end = value;
+        break;
+      case "open_bracket":
+        value = this.parse_list_node();
+        end = value;
+        break;
       default:
         this.eat();
 
@@ -723,16 +857,34 @@ export default class parser {
     };
   }
 
-  parse_keyword(): nodes.import_node | nodes.function_node | nodes.if_node {
+  parse_keyword():
+    | nodes.import_node
+    | nodes.function_node
+    | nodes.if_node
+    | nodes.export_node
+    | nodes.for_node
+    | nodes.break_node {
     const keyword = this.peek() as tokens.keyword_token;
 
     switch (keyword.value) {
       case "import":
         return this.parse_import_node();
+      case "foreign":
+        return this.parse_foreign_import_node();
+      case "export":
+        return this.parse_export_node();
       case "fn":
         return this.parse_function_node();
+      case "static":
+        return this.parse_static_function_node();
       case "if":
         return this.parse_if_node();
+      case "for":
+        return this.parse_for_node();
+      case "break":
+        return this.parse_break_node();
+      case "impl":
+        return this.parse_impl_node();
       default:
         return todo(`parse_keyword: ${keyword.value}`);
     }
@@ -744,6 +896,15 @@ export default class parser {
     this.eat_whitespace();
 
     let identifier: nodes.identifier_node[] = [];
+
+    let internal = false;
+
+    const next = this.peek();
+    if (next.kind === "operator" && next.value === ".") {
+      internal = true;
+      this.eat();
+      this.eat_whitespace();
+    }
 
     while (this.cursor < this.tokens.length) {
       const t = this.peek();
@@ -856,14 +1017,43 @@ export default class parser {
       );
     }
 
-    this.eat();
+    if (close_paren.kind === "close_paren") {
+      this.eat();
+    }
 
     return {
       kind: "import",
       identifier,
       as: alias,
       expose,
+      foreign: false,
+      internal,
       location: this.location(keyword, close_paren),
+    };
+  }
+
+  parse_foreign_import_node(): nodes.import_node {
+    const keyword = this.eat() as tokens.keyword_token;
+
+    this.eat_whitespace();
+
+    const import_node = this.parse_import_node();
+
+    import_node.foreign = true;
+    import_node.location = this.location(keyword, import_node);
+
+    return import_node;
+  }
+
+  parse_export_node(): nodes.export_node {
+    const keyword = this.eat() as tokens.keyword_token;
+
+    const statement = this.parse_statement();
+
+    return {
+      kind: "export",
+      value: statement,
+      location: this.location(keyword, statement),
     };
   }
 
@@ -936,8 +1126,22 @@ export default class parser {
       args,
       body,
       return_type,
+      static: false,
       location: this.location(keyword, body),
     };
+  }
+
+  parse_static_function_node(): nodes.function_node {
+    const keyword = this.eat() as tokens.keyword_token;
+
+    this.eat_whitespace();
+
+    const function_node = this.parse_function_node();
+
+    function_node.static = true;
+    function_node.location = this.location(keyword, function_node);
+
+    return function_node;
   }
 
   parse_if_node(): nodes.if_node {
@@ -973,6 +1177,112 @@ export default class parser {
       body,
       else: else_node,
       location: this.location(keyword, else_node ?? body),
+    };
+  }
+
+  parse_for_node(): nodes.for_node {
+    const keyword = this.eat() as tokens.keyword_token;
+
+    let identifier: nodes.expression_node | null = null;
+    let iterable: nodes.expression_node | nodes.range_node | null = null;
+    let body: nodes.block_node | null = null;
+
+    this.eat_whitespace();
+
+    let next = this.peek();
+
+    if (next.kind === "open_curly") {
+      body = this.parse_block_node();
+
+      return {
+        kind: "for",
+        identifier: null,
+        iterable: null,
+        body,
+        location: this.location(keyword, body),
+      };
+    }
+
+    const maybe_identifier = this.parse_expression();
+
+    this.eat_whitespace();
+
+    next = this.peek();
+
+    if (next.kind === "keyword" && next.value === "of") {
+      this.eat();
+      this.eat_whitespace();
+
+      identifier = maybe_identifier;
+
+      const maybe_iterable = this.parse_expression();
+
+      this.eat_whitespace();
+      next = this.peek();
+
+      if (next.kind === "operator" && next.value === "..") {
+        // Range with an incrementing identifier
+        this.eat();
+        this.eat_whitespace();
+
+        const to = this.parse_expression();
+
+        iterable = {
+          kind: "range",
+          from: maybe_iterable,
+          to,
+          location: this.location(maybe_iterable, to),
+        };
+
+        this.eat_whitespace();
+
+        body = this.parse_block_node();
+      } else if (next.kind === "open_curly") {
+        iterable = maybe_iterable;
+        body = this.parse_block_node();
+      } else {
+        throw new Error(`Expected .. or { after of keyword`);
+      }
+    } else if (next.kind === "operator" && next.value === "..") {
+      // Range without an incrementing identifier
+      this.eat();
+      this.eat_whitespace();
+
+      const to = this.parse_expression();
+
+      iterable = {
+        kind: "range",
+        from: maybe_identifier,
+        to,
+        location: this.location(maybe_identifier, to),
+      };
+
+      this.eat_whitespace();
+
+      body = this.parse_block_node();
+    } else if (next.kind === "open_curly") {
+      // Loop over an iterator
+      iterable = maybe_identifier;
+      body = this.parse_block_node();
+    } else {
+      throw new Error(`Expected of, .., or { after for keyword`);
+    }
+
+    return {
+      kind: "for",
+      identifier,
+      iterable,
+      body,
+      location: this.location(keyword, body),
+    };
+  }
+
+  parse_break_node(): nodes.break_node {
+    const keyword = this.eat() as tokens.keyword_token;
+
+    return {
+      kind: "break",
+      location: keyword.location,
     };
   }
 
@@ -1184,5 +1494,109 @@ export default class parser {
         kind: "type_expression",
       };
     }
+  }
+
+  parse_list_node(): nodes.list_node {
+    const open_bracket = this.eat();
+    this.eat_whitespace();
+
+    const items: nodes.expression_node[] = [];
+
+    while (this.cursor < this.tokens.length) {
+      const t = this.peek();
+      if (t.kind === "close_bracket") {
+        break;
+      }
+
+      const item = this.parse_expression();
+      this.eat_whitespace();
+
+      items.push(item);
+
+      const comma = this.peek();
+      if (comma.kind === "operator" && comma.value === ",") {
+        this.eat();
+        this.eat_whitespace();
+      }
+    }
+
+    const close_bracket = this.peek();
+    if (close_bracket.kind !== "close_bracket") {
+      throw new Error(`Expected a close bracket after list`);
+    }
+    this.eat();
+
+    return {
+      kind: "list",
+      value: items,
+      location: this.location(open_bracket, close_bracket),
+    };
+  }
+
+  parse_impl_node(): nodes.impl_node {
+    const keyword = this.eat() as tokens.keyword_token;
+
+    this.eat_whitespace();
+
+    let type: nodes.expression_node | null = null;
+    let target: nodes.expression_node | null = null;
+    const methods: nodes.function_node[] = [];
+
+    const maybe_type = this.parse_expression();
+
+    this.eat_whitespace();
+
+    let next = this.peek();
+
+    if (next.kind === "keyword" && next.value === "for") {
+      type = maybe_type;
+
+      this.eat();
+      this.eat_whitespace();
+
+      target = this.parse_expression();
+
+      next = this.peek();
+      if (next.kind !== "open_curly") {
+        throw new Error(`Expected { after for keyword`);
+      }
+    } else if (next.kind === "open_curly") {
+      target = maybe_type;
+    } else {
+      throw new Error(`Expected for or { after impl keyword`);
+    }
+
+    const open_curly = this.eat() as tokens.open_curly_token;
+
+    while (this.cursor < this.tokens.length) {
+      this.eat_whitespace();
+
+      const t = this.peek();
+      if (t.kind === "close_curly") {
+        break;
+      }
+
+      if (t.kind !== "keyword" || (t.value !== "fn" && t.value !== "static")) {
+        throw new Error(`Expected fn or static keyword in impl block`);
+      }
+
+      const method = this.parse_function_node();
+
+      methods.push(method);
+    }
+
+    next = this.peek();
+    if (next.kind !== "close_curly") {
+      throw new Error(`Expected a close curly after impl block`);
+    }
+    this.eat();
+
+    return {
+      kind: "impl",
+      type,
+      target: target!,
+      methods,
+      location: this.location(keyword, open_curly),
+    };
   }
 }

@@ -32,11 +32,13 @@ export const operators = [
   ">",
   "<",
   "^",
+  "..",
 ] as const;
 
 export const precedence: Record<symbols, number> = {
   ":=": 1,
   "=": 1,
+  "..": 1,
   "->": 1,
   ":": 1,
   ",": 1,

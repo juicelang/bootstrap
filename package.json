@@ -16,6 +16,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@littlethings/coder": "^1.1.5",
     "@littlethings/log": "^3.0.6",
     "arg": "^5.0.2"
   }

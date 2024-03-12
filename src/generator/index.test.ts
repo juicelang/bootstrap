@@ -15,30 +15,145 @@ describe("Generator", () => {
     g = new generator();
   });
 
-  // describe("Examples", () => {
-  //   test("generates a basic example", () => {
-  //     let code = trim(`
-  // 'result(value) := {
-  // ok(value: value)
-  // error(message: string)
-  // }
-  // `);
-  //     let ast = p.parse(code);
-  //     console.log(ast);
-  //     let result = g.generate(ast);
-  //   });
+  describe("Impl", () => {
+    test("generates a basic impl", () => {
+      let code = trim(`
+			'x := {
+				a: string
+			}
 
-  //   test.skip("generates a basic type example", () => {
-  //     let code = trim(`
-  // 'result(value) := {
-  // ok(value: value)
-  // error(message: string)
-  // }
-  // `);
-  //     let ast = p.parse(code);
-  //     let result = g.generate(ast);
+			impl x {
+				fn get_a(self) {
+					self.a
+				}
+			}
+		`);
+      let ast = p.parse(code);
+      let result = g.generate("example", "main", ast);
+    });
+  });
 
-  //     console.log(result);
-  //   });
-  // });
+  describe("Examples", () => {
+    test("generates a basic example", () => {
+      let code = trim(`
+				'x := {
+					a: string
+				}
+			`);
+      let ast = p.parse(code);
+      let result = g.generate("example", "main", ast);
+    });
+
+    test("generates a generic type example", () => {
+      let code = trim(`
+				'result(value) := {
+					ok(value: value)
+					error(message: string)
+				}
+			`);
+      let ast = p.parse(code);
+      let result = g.generate("example", "main", ast);
+    });
+
+    test("generates a constant example", () => {
+      let code = trim(`
+				x := 1
+				y := 1 + 1
+				z := true
+
+				name := "world"
+				message := "
+				| hello
+				| there
+				| \${name}
+				"
+			`);
+      let ast = p.parse(code);
+      let result = g.generate("example", "main", ast);
+    });
+
+    test("generates a function example", () => {
+      let code = trim(`
+				fn main(args) {
+					x := 1
+					x + 1
+				}
+			`);
+      let ast = p.parse(code);
+      let result = g.generate("example", "main", ast);
+    });
+
+    test("generates a common example", () => {
+      let code = trim(`
+				import dev.juice.io as io (stdout)
+
+				'result(value) := {
+					ok(value: value)
+					error(message: string)
+				}
+
+				fn main(args) {
+					res := result.ok(1)
+
+					stdout.write_line("Hello, world!")
+				}
+			`);
+      let ast = p.parse(code);
+      let result = g.generate("example", "main", ast);
+    });
+
+    test("generates a common example", () => {
+      let code = trim(`
+				import dev.juice.io as io (stdout)
+				foreign import .http as http
+
+				'result(value) := {
+					ok(value: value)
+					error(message: string)
+				}
+
+				export fn main(args) {
+					request := http.get("https://example.com")
+
+					request.on_success(fn (response) {
+						stdout.write_line(response.body)
+					})
+
+					stdout.write_line("Hello, world!")
+				}
+			`);
+      let ast = p.parse(code);
+      let result = g.generate("example", "main", ast);
+    });
+
+    test("generates a complex example", () => {
+      let code = trim(`
+				import dev.juice.io as io (stdout)
+
+				'result(value) := {
+					ok(value: value)
+					error(message: string)
+				}
+
+				fn run_loop() {
+					for x of [1, 2, 3] {
+						io.stdout.write_line("Hello, world!")
+					}
+				}
+
+				export fn main(args) {
+					request := http.get("https://example.com")
+
+					request.on_success(fn (response) {
+						stdout.write_line(response.body)
+						run_loop()
+					})
+
+					stdout.write_line("Hello, world!")
+				}
+			`);
+      let ast = p.parse(code);
+      let result = g.generate("example", "main", ast);
+    });
+  });
 });
