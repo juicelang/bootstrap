@@ -2,6 +2,7 @@ import .std.io
 import .std.path
 import .std.types (type, result, option)
 import .std.data.map (map)
+import .compiler (compiler)
 
 fn help() {
 	io.stdout.write_line("
@@ -12,6 +13,7 @@ fn help() {
 	|
 	| Options:
 	|   --project          The project to build
+	|   --source           The source directory
 	|
 	|   --lex              Only run the lexer
 	|   --parse            Only run the parser
@@ -49,11 +51,38 @@ export fn run() {
 
 	source_dir := {
 		if args.has("source") {
-			path.resolve([project_path, path.resolve_relative(args.get("source"))])
+			path.resolve([project_path, args.get("source")])
 		} else {
-			path.resolve([project_path, "juice"])
+			path.resolve([project_path, "src"])
 		}
 	}
 
-	io.debug(source_dir)
+	c := compiler.new()
+
+	compilation_queue := [path.resolve([source_dir, "main.juice"])]
+	compiled_files := map.new()
+
+	for {
+		if compilation_queue.length == 0 {
+			break
+		}
+
+		file := compilation_queue.pop()
+
+		if compiled_files.has(file) {
+			continue
+		}
+
+		compile_result := c.compile(file)
+
+		if !type.is(compile_result, result.ok) {
+			return compile_result
+		}
+
+		compiled := compile_result.value
+
+		compiled_files.set(file, compiled)
+	}
+
+	io.debug(compiled_files.data)
 }

@@ -1,0 +1,24 @@
+import .std.io
+import .std.types (result)
+
+export 'compiled_file := {
+	ast: ast
+	code: string
+	file_path: string
+}
+
+export 'compiler := {
+}
+
+impl compiler {
+	static fn new() {
+		compiler()
+	}
+
+	fn compile(self, file_path) {
+		io.debug("Compiling file: ${file_path}")
+		compiled := compiled_file()
+
+		result.ok(compiled)
+	}
+}

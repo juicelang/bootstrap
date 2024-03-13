@@ -201,7 +201,10 @@ export default class generator {
     const left = this.generate_sub_expression(binary_expression.value[0]);
     const right = this.generate_sub_expression(binary_expression.value[1]);
 
-    return `(${left} ${binary_expression.operator} ${right})`;
+    const operator =
+      binary_expression.operator === "==" ? "===" : binary_expression.operator;
+
+    return `(${left} ${operator} ${right})`;
   }
 
   generate_import(import_node: nodes.import_node) {
@@ -300,10 +303,9 @@ export default class generator {
   ) {
     const sanitized_type_name = name.replace(/^'/, "");
 
-    const maybe_name = type_constructor.name.value[0];
     const sanitized_name = (
-      typeof maybe_name === "string"
-        ? maybe_name
+      typeof type_constructor.name.value === "string"
+        ? type_constructor.name.value
         : type_constructor.name.value[0].value
     )
       // @ts-expect-error
