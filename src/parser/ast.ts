@@ -285,6 +285,11 @@ export interface list_node extends base_node {
   value: expression_node[];
 }
 
+export interface return_node extends base_node {
+  kind: "return";
+  value: expression_node | null;
+}
+
 export type node =
   | string_node
   | number_node
@@ -324,6 +329,7 @@ export type node =
   | function_call_node
   | function_call_argument_node
   | export_node
+  | return_node
   | for_node
   | range_node
   | break_node

@@ -1,5 +1,47 @@
-import .std.io (stdout)
+import .std.io
+import .std.types (type, result, option)
+import .std.data.map (map)
+import .cli.help as help_command
+import .cli.build as build_command
 
 export fn main() {
-	stdout.write_line("hello")
+	args_result := io.parse_process_arguments([
+		io.argument.boolean("help", "h"),
+		io.argument.boolean("version", "v")
+	], permissive: true)
+
+	if !type.is(args_result, result.ok) {
+		return args_result
+	}
+
+	args := args_result.value
+
+	if args.has("version") {
+		io.stdout.write_line("0.0.0")
+		return
+	}
+
+	positional_args := args.get("_")
+
+	if positional_args.length == 0 {
+		help_command.run()
+
+		if args.has("help") {
+			return
+		}
+
+		return result.error("No command provided")
+	}
+
+	sub_command := positional_args.at(0)
+
+	if sub_command == "help" {
+		return help_command.run()
+	}
+
+	if sub_command == "build" {
+		return build_command.run(args)
+	}
+
+	return result.error("Unknown command: " + sub_command)
 }

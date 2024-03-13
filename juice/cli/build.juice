@@ -1,0 +1,59 @@
+import .std.io
+import .std.path
+import .std.types (type, result, option)
+import .std.data.map (map)
+
+fn help() {
+	io.stdout.write_line("
+	| Juice CLI - Version 0.0.0
+	|
+	| Usage:
+	|   juice build [options]
+	|
+	| Options:
+	|   --project          The project to build
+	|
+	|   --lex              Only run the lexer
+	|   --parse            Only run the parser
+	")
+}
+
+export fn run() {
+	args_result := io.parse_process_arguments([
+		io.argument.boolean("help", "h"),
+		io.argument.boolean("version", "v"),
+		io.argument.string("project", "p"),
+		io.argument.string("source", "s"),
+		io.argument.boolean("lex", "L"),
+		io.argument.boolean("parse", "P"),
+	])
+
+	if !type.is(args_result, result.ok) {
+		return args_result
+	}
+
+	args := args_result.value
+
+	if args.has("help") {
+		help()
+		return result.ok()
+	}
+
+	relative_project_path := if args.has("project") {
+		args.get("project").value
+	} else {
+		"."
+	}
+
+	project_path := path.resolve_relative(relative_project_path)
+
+	source_dir := {
+		if args.has("source") {
+			path.resolve([project_path, path.resolve_relative(args.get("source"))])
+		} else {
+			path.resolve([project_path, "juice"])
+		}
+	}
+
+	io.debug(source_dir)
+}

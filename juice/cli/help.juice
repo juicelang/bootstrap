@@ -1,0 +1,14 @@
+import .std.io
+
+export fn run() {
+	io.stdout.write_line("
+	| Juice CLI - Version 0.0.0
+	|
+	| Usage:
+	|   juice <command> [options]
+	|
+	| Commands:
+	|   build              Build the current project
+	|   run                Run the current project
+	")
+}

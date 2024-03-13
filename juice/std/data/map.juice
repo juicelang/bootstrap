@@ -1,0 +1,35 @@
+foreign import .std.data.map as foreign_map
+
+export 'map := {
+	data: js_map
+}
+
+impl map {
+	static fn new() {
+		map(foreign_map.create())
+	}
+
+	fn get(self, key) {
+		foreign_map.get(self.data, key)
+	}
+
+	fn set(self, key, value) {
+		foreign_map.set(self.data, key, value)
+	}
+
+	fn remove(self, key) {
+		foreign_map.remove(self.data, key)
+	}
+
+	fn has(self, key) {
+		foreign_map.has(self.data, key)
+	}
+
+	fn size(self) {
+		foreign_map.size(self.data)
+	}
+
+	fn keys(self) {
+		foreign_map.keys(self.data)
+	}
+}

@@ -224,7 +224,13 @@ export default class parser {
           is_statement,
         });
 
-        return todo("parse_expression: member access");
+        const new_root_sub_expression = {
+          kind: "member_expression",
+          value: [root_sub_expression, sub_expression],
+          location: this.location(root_sub_expression, sub_expression),
+        } as nodes.member_expression_node;
+
+        root_sub_expression = new_root_sub_expression;
         continue;
       }
 
@@ -518,6 +524,16 @@ export default class parser {
 
     let t = this.peek();
     let negate = false;
+
+    while (this.cursor < this.tokens.length) {
+      t = this.peek();
+      if (t.kind === "comment") {
+        this.eat();
+        this.eat_whitespace();
+      } else {
+        break;
+      }
+    }
 
     if (t.kind === "operator" && t.value === "-") {
       negate = true;
@@ -866,7 +882,9 @@ export default class parser {
     | nodes.if_node
     | nodes.export_node
     | nodes.for_node
-    | nodes.break_node {
+    | nodes.break_node
+    | nodes.impl_node
+    | nodes.return_node {
     const keyword = this.peek() as tokens.keyword_token;
 
     switch (keyword.value) {
@@ -888,6 +906,8 @@ export default class parser {
         return this.parse_break_node();
       case "impl":
         return this.parse_impl_node();
+      case "return":
+        return this.parse_return_node();
       default:
         return todo(`parse_keyword: ${keyword.value}`);
     }
@@ -1607,6 +1627,29 @@ export default class parser {
       target: target!,
       methods,
       location: this.location(keyword, open_curly),
+    };
+  }
+
+  parse_return_node(): nodes.return_node {
+    const keyword = this.eat() as tokens.keyword_token;
+
+    this.eat_whitespace();
+
+    const next = this.peek();
+    if (next.kind === "close_curly") {
+      return {
+        kind: "return",
+        value: null,
+        location: this.location(keyword, keyword),
+      };
+    }
+
+    const value = this.parse_expression();
+
+    return {
+      kind: "return",
+      value,
+      location: this.location(keyword, value),
     };
   }
 }

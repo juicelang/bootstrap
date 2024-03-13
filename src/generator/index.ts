@@ -117,6 +117,12 @@ export default class generator {
         return this.generate_for(statement.value);
       case "impl":
         return this.generate_impl(statement.value);
+      case "if":
+        return this.generate_if(statement.value);
+      case "break":
+        return this.generate_break(statement.value);
+      case "return":
+        return this.generate_return(statement.value);
       case "eof":
         return;
     }
@@ -131,12 +137,19 @@ export default class generator {
       default:
         // @ts-ignore
         return todo(`generate_sub_expression: ${sub_expression.kind}`);
+      case "expression":
+        return this.generate_expression(sub_expression);
       case "value_expression":
         return this.generate_value_expression(sub_expression);
       case "unary_expression":
         return this.generate_unary_expression(sub_expression);
       case "binary_expression":
         return this.generate_binary_expression(sub_expression);
+      case "member_expression":
+        return this.generate_member_expression(sub_expression);
+      // @ts-ignore
+      case "identifier":
+        return this.generate_identifier(sub_expression);
       // @ts-ignore
       case "function_call":
         return this.generate_function_call(sub_expression);
@@ -166,9 +179,11 @@ export default class generator {
       case "function":
         return this.generate_function(value_expression.value);
       case "block":
-        return this.generate_block(value_expression.value);
+        return this.generate_block_expression(value_expression.value);
       case "list":
         return this.generate_list(value_expression.value);
+      case "if":
+        return this.generate_if_expression(value_expression.value);
     }
   }
 
@@ -308,7 +323,13 @@ export default class generator {
       !type_constructor.is_shorthand &&
       !this.registered_types.includes(sanitized_type_name)
     ) {
-      const setup = `${do_export}const ${sanitized_type_name} = Object.create(null)`;
+      const setup = `${do_export}const ${sanitized_type_name} = Object.create(null);
+${sanitized_type_name}.toString = function() {
+		return "${sanitized_type_name}";
+}
+${sanitized_type_name}.to_string = function() {
+		return "${sanitized_type_name}";
+}`;
 
       this.emit_types(setup);
       this.registered_types.push(sanitized_type_name);
@@ -332,9 +353,27 @@ export default class generator {
 	${properties.join("\n")}
 
 	this._type = "${sanitized_type_name}#${sanitized_name}";
+
+	this.toString = function() {
+		return \`${sanitized_type_name}#${sanitized_name}(${parameters
+      .map((p) => `${p}: \${this.${p}}`)
+      .join(", ")})\`
+	};
+
+	this.to_string = function() {
+		return \`${sanitized_type_name}#${sanitized_name}(${parameters
+      .map((p) => `${p}: \${this.${p}}`)
+      .join(", ")})\`
+	};
 }
 
 ${access}._type = "${sanitized_type_name}#${sanitized_name}";
+${access}.toString = function() {
+		return "${sanitized_type_name}#${sanitized_name}";
+}
+${access}.to_string = function() {
+		return "${sanitized_type_name}#${sanitized_name}";
+}
 `;
 
     this.emit_types(result);
@@ -403,8 +442,13 @@ ${access}._type = "${sanitized_type_name}#${sanitized_name}";
 
     const body = function_node.body.value
       .map((node, i, xs) => {
-        if (i === xs.length - 1 && node.value.kind === "expression") {
-          return `return ${this.generate_expression(node.value)};`;
+        if (i === xs.length - 1) {
+          if (node.value.kind === "expression") {
+            return `return ${this.generate_expression(node.value)};`;
+          }
+          if (node.value.kind === "if") {
+            return `return ${this.generate_if_expression(node.value)}`;
+          }
         }
 
         return this.generate_statement(node);
@@ -432,16 +476,37 @@ ${body}
   generate_block(block: nodes.block_node): string {
     const statements = block.value
       .map((statement, i, xs) => {
-        if (i === xs.length - 1 && statement.value.kind === "expression") {
-          return `return ${this.generate_expression(statement.value)};`;
+        if (i === xs.length - 1) {
+          if (statement.value.kind === "expression") {
+            return `${this.generate_expression(statement.value)};`;
+          }
+          if (statement.value.kind === "if") {
+            return this.generate_if(statement.value);
+          }
         }
         return this.generate_statement(statement);
       })
       .join("\n");
 
-    return `(() => {
-${statements}
-})()`;
+    return `${statements}`;
+  }
+
+  generate_block_expression(block: nodes.block_node): string {
+    const statements = block.value
+      .map((statement, i, xs) => {
+        if (i === xs.length - 1) {
+          if (statement.value.kind === "expression") {
+            return `return ${this.generate_expression(statement.value)};`;
+          }
+          if (statement.value.kind === "if") {
+            return `return ${this.generate_if_expression(statement.value)}`;
+          }
+        }
+        return this.generate_statement(statement);
+      })
+      .join("\n");
+
+    return `(() => {${statements}})()`;
   }
 
   generate_list(list: nodes.list_node) {
@@ -468,8 +533,7 @@ ${statements}
 const ${id} = ${from} <= ${to}
 const ${id}_from = ${from};
 const ${id}_to = ${to};
-for (let __i = ${id}_from; (${id} ? __i < ${id}_to : __i > ${id}_to); (${id} ? __i++ : __i--)) {
-const ${identifier} = __i;
+for (let ${identifier} = ${id}_from; (${id} ? ${identifier} < ${id}_to : ${identifier} > ${id}_to); (${id} ? ${identifier}++ : ${identifier}--)) {
 ${body}\n}`;
       } else {
         const iterable = this.generate_expression(for_node.iterable);
@@ -484,7 +548,7 @@ ${body}\n}`;
 
         return `
 const ${id} = ${from} <= ${to}
-for (let __i = ${from}; (${id} ? __i < ${to} : __i > ${to}); (${id} ? __i++ : __i--)) {\n${body}\n}`;
+for (let ${identifier} = ${from}; (${id} ? ${identifier} < ${to} : ${identifier} > ${to}); (${id} ? ${identifier}++ : ${identifier}--)) {\n${body}\n}`;
       } else {
         const iterable = this.generate_expression(for_node.iterable);
         return `for (const ${this.unique_id()} of ${iterable}) {\n${body}\n}`;
@@ -515,8 +579,13 @@ for (let __i = ${from}; (${id} ? __i < ${to} : __i > ${to}); (${id} ? __i++ : __
 
       const body = function_node.body.value
         .map((node, i, xs) => {
-          if (i === xs.length - 1 && node.value.kind === "expression") {
-            return `return ${this.generate_expression(node.value)};`;
+          if (i === xs.length - 1) {
+            if (node.value.kind === "expression") {
+              return `return ${this.generate_expression(node.value)};`;
+            }
+            if (node.value.kind === "if") {
+              return `return ${this.generate_if_expression(node.value)}`;
+            }
           }
 
           return this.generate_statement(node);
@@ -529,17 +598,17 @@ for (let __i = ${from}; (${id} ? __i < ${to} : __i > ${to}); (${id} ? __i++ : __
 
       let result = "";
       if (function_node.static) {
-        result = `${access} = function() {
+        result = `${access} = function(...__args) {
 	return (function${name ? ` __${method_name}` : ""}(${parameters.join(", ")}) {
 		${body}
-	})(...arguments);
+	})(...__args);
 }`;
       } else {
-        result = `${access} = function() {
+        result = `${access} = function(...__args) {
 	const self = this;
 	return (function${name ? ` __${method_name}` : ""}(${parameters.join(", ")}) {
 		${body}
-	})(self, ...arguments);
+	})(self, ...__args);
 }`;
       }
 
@@ -547,5 +616,106 @@ for (let __i = ${from}; (${id} ? __i < ${to} : __i > ${to}); (${id} ? __i++ : __
     }
 
     this.emit_impls(methods.join("\n"));
+  }
+
+  generate_if(if_node: nodes.if_node): string {
+    const condition = this.generate_expression(if_node.condition);
+    const body = this.generate_block(if_node.body);
+
+    let else_body = "";
+
+    if (if_node.else) {
+      if (if_node.else.kind === "if") {
+        else_body = this.generate_if(if_node.else);
+      } else {
+        else_body = this.generate_block(if_node.else);
+      }
+    }
+
+    return `if (${condition}) {
+${body}
+}${
+      else_body
+        ? `else {
+${else_body}
+}`
+        : ""
+    }`;
+  }
+
+  generate_if_expression(if_node: nodes.if_node): string {
+    const condition = this.generate_expression(if_node.condition);
+
+    const statements = if_node.body.value.map((node, i, xs) => {
+      if (i === xs.length - 1) {
+        if (node.value.kind === "expression") {
+          return `return ${this.generate_expression(node.value)};`;
+        }
+        if (node.value.kind === "if") {
+          return this.generate_if_expression(node.value);
+        }
+      }
+      return this.generate_statement(node);
+    });
+
+    let else_body = "";
+
+    if (if_node.else) {
+      if (if_node.else.kind === "if") {
+        else_body = `return ${this.generate_if_expression(if_node.else)}`;
+      } else {
+        else_body = if_node.else.value
+          .map((node, i, xs) => {
+            if (i === xs.length - 1) {
+              if (node.value.kind === "expression") {
+                return `return ${this.generate_expression(node.value)};`;
+              }
+              if (node.value.kind === "if") {
+                return `return ${this.generate_if_expression(node.value)}`;
+              }
+            }
+            return this.generate_statement(node);
+          })
+          .join("\n");
+      }
+    }
+
+    return `(() => {
+if (${condition}) {
+${statements.join("\n")}
+}${
+      else_body
+        ? ` else {
+${else_body}
+}`
+        : ""
+    }
+})()`;
+  }
+
+  generate_break(break_node: nodes.break_node) {
+    return "break;";
+  }
+
+  generate_return(return_node: nodes.return_node) {
+    if (return_node.value === null) {
+      return `return;`;
+    }
+
+    return `return ${this.generate_expression(return_node.value)};`;
+  }
+
+  generate_member_expression(
+    member_expression: nodes.member_expression_node,
+  ): string {
+    const left =
+      // @ts-expect-error
+      member_expression.value[0].kind === "function_call"
+        ? // @ts-expect-error
+          this.generate_sub_expression(member_expression.value[0])
+        : this.generate_expression(member_expression.value[0]);
+    const right = this.generate_expression(member_expression.value[1]);
+
+    return `(${left}.${right})`;
   }
 }

@@ -25,6 +25,11 @@ try {
 
   const source_files = [entry_file];
 
+  const prelude = await fs.readFile(
+    path.join(__dirname, "prelude.js"),
+    "utf-8",
+  );
+
   // Create output directory if it doesn't exist
   if (
     await fs
@@ -34,6 +39,8 @@ try {
   ) {
     await fs.mkdir(output_dirname);
   }
+
+  await fs.writeFile(path.resolve(output_dirname, "__prelude.js"), prelude);
 
   while (source_files.length > 0) {
     const file = source_files.pop()!;
@@ -54,7 +61,23 @@ try {
     );
 
     if (module_name === "main") {
-      code += "\n\nmain()";
+      code = `import "./__prelude.js";\n` + code;
+      code += `
+try {
+	const result = main()
+
+	if (result && result._type && result._type === "result#error") {
+		console.error(result.to_string());
+	} else if (result && result._type && result._type === "result#ok") {
+		// Clean exit...
+	} else if (result) {
+		console.log(result);
+	}
+} catch (error) {
+	console.error("An error occurred while running main.");
+	console.error(error);
+}
+`;
     }
 
     await fs.writeFile(file_name, code);
