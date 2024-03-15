@@ -754,7 +754,6 @@ ${else_body}
         : this.generate_expression(member_expression.value[0]);
     const right = this.generate_expression(member_expression.value[1]);
 
-    console.log(right);
     if (right === "await") {
       return `(await (${left}))`;
     } else {
