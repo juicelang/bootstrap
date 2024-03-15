@@ -21,20 +21,14 @@ fn help() {
 }
 
 export fn run() {
-	args_result := io.parse_process_arguments([
+	args := io.parse_process_arguments([
 		io.argument.boolean("help", "h"),
 		io.argument.boolean("version", "v"),
 		io.argument.string("project", "p"),
 		io.argument.string("source", "s"),
 		io.argument.boolean("lex", "L"),
 		io.argument.boolean("parse", "P"),
-	])
-
-	if !type.is(args_result, result.ok) {
-		return args_result
-	}
-
-	args := args_result.value
+	])?
 
 	if args.has("help") {
 		help()
@@ -73,16 +67,9 @@ export fn run() {
 			continue
 		}
 
-		compile_result := c.compile(file)
+		compile_result := c.compile(file)?
 
-		if !type.is(compile_result, result.ok) {
-			return compile_result
-		}
-
-		compiled := compile_result.value
-
-		compiled_files.set(file, compiled)
+		compiled_files.set(file, compile_result)
 	}
-
-	io.debug(compiled_files.data)
 }
+

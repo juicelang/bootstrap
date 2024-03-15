@@ -5,16 +5,10 @@ import .cli.help as help_command
 import .cli.build as build_command
 
 export fn main() {
-	args_result := io.parse_process_arguments([
+	args := io.parse_process_arguments([
 		io.argument.boolean("help", "h"),
 		io.argument.boolean("version", "v")
-	], permissive: true)
-
-	if !type.is(args_result, result.ok) {
-		return args_result
-	}
-
-	args := args_result.value
+	], permissive: true)?
 
 	if args.has("version") {
 		io.stdout.write_line("0.0.0")
@@ -43,5 +37,5 @@ export fn main() {
 		return build_command.run(args)
 	}
 
-	return result.error("Unknown command: " + sub_command)
+	return result.error("Unknown command ${sub_command}")
 }

@@ -33,9 +33,12 @@ export default class parser {
 
     while (
       this.cursor < this.tokens.length &&
-      this.peek().kind === "whitespace"
+      (this.peek().kind === "whitespace" || this.peek().kind === "comment")
     ) {
-      ts.push(this.eat() as tokens.whitespace_token);
+      const t = this.eat();
+      if (t.kind !== "comment") {
+        ts.push(t as tokens.whitespace_token);
+      }
     }
 
     return ts;
@@ -224,12 +227,14 @@ export default class parser {
           is_statement,
         });
 
+        // @ts-expect-error
         const new_root_sub_expression = {
           kind: "member_expression",
           value: [root_sub_expression, sub_expression],
           location: this.location(root_sub_expression, sub_expression),
         } as nodes.member_expression_node;
 
+        // @ts-expect-error
         root_sub_expression = new_root_sub_expression;
         continue;
       }
@@ -339,6 +344,45 @@ export default class parser {
           right: this.parse_expression(),
           location: this.location(root_sub_expression, root_sub_expression),
         } as nodes.assignment_node;
+      }
+
+      if (next.kind === "operator" && next.value === "?") {
+        this.eat_whitespace();
+        const question_mark = this.eat();
+
+        if (root_sub_expression.kind === "binary_expression") {
+          if (last_binary_expression === undefined) {
+            throw new Error("last_binary_expression is undefined");
+          }
+
+          const right_sub_expression = last_binary_expression?.value[1]!;
+
+          const new_right_sub_expression: nodes.unwrap_node = {
+            kind: "unwrap",
+            value: right_sub_expression,
+            location: this.location(right_sub_expression, question_mark),
+          };
+
+          last_binary_expression.value[1] = {
+            kind: "value_expression",
+            value: new_right_sub_expression,
+            location: new_right_sub_expression.location,
+          };
+        } else {
+          const sub_expression: nodes.unwrap_node = {
+            kind: "unwrap",
+            value: root_sub_expression,
+            location: this.location(root_sub_expression, question_mark),
+          };
+
+          root_sub_expression = {
+            kind: "value_expression",
+            value: sub_expression,
+            location: sub_expression.location,
+          };
+        }
+
+        continue;
       }
 
       if (next.kind === "operator") {

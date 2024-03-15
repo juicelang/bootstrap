@@ -29,6 +29,8 @@ export default class generator {
   namespace: string = "";
   module_name: string = "";
 
+  anchor: string = "";
+
   registered_types: string[] = [];
 
   id_counter: number = 0;
@@ -84,6 +86,10 @@ export default class generator {
     this.impls_output += "\n" + text;
   }
 
+  emit_anchor(text: string) {
+    this.anchor += "\n" + text;
+  }
+
   unique_id() {
     return `__${this.id_counter++}`;
   }
@@ -98,33 +104,55 @@ export default class generator {
   }
 
   generate_statement(statement: nodes.statement_node) {
+    let text: string | void;
+
+    this.anchor = "";
+
     switch (statement.value.kind) {
       default:
         return todo(`generate_statement: ${statement.value.kind}`);
       case "import":
-        return this.generate_import(statement.value);
+        text = this.generate_import(statement.value);
+        break;
       case "type_assignment":
-        return this.generate_type_assignment(statement.value);
+        text = this.generate_type_assignment(statement.value);
+        break;
       case "assignment":
-        return this.generate_assignment(statement.value);
+        text = this.generate_assignment(statement.value);
+        break;
       case "function":
-        return this.generate_function(statement.value);
+        text = this.generate_function(statement.value);
+        break;
       case "expression":
-        return this.generate_expression(statement.value) + ";";
+        text = this.generate_expression(statement.value) + ";";
+        break;
       case "export":
-        return this.generate_export(statement.value);
+        text = this.generate_export(statement.value);
+        break;
       case "for":
-        return this.generate_for(statement.value);
+        text = this.generate_for(statement.value);
+        break;
       case "impl":
-        return this.generate_impl(statement.value);
+        text = this.generate_impl(statement.value);
+        break;
       case "if":
-        return this.generate_if(statement.value);
+        text = this.generate_if(statement.value);
+        break;
       case "break":
-        return this.generate_break(statement.value);
+        text = this.generate_break(statement.value);
+        break;
       case "return":
-        return this.generate_return(statement.value);
+        text = this.generate_return(statement.value);
+        break;
       case "eof":
         return;
+    }
+
+    const anchor = this.anchor;
+    this.anchor = "";
+
+    if (text) {
+      return `${anchor}\n${text}`;
     }
   }
 
@@ -132,11 +160,14 @@ export default class generator {
     return this.generate_sub_expression(expression.value);
   }
 
-  generate_sub_expression(sub_expression: nodes.sub_expression_node) {
+  generate_sub_expression(
+    sub_expression: nodes.sub_expression_node,
+  ): string | void {
     switch (sub_expression.kind) {
       default:
         // @ts-ignore
         return todo(`generate_sub_expression: ${sub_expression.kind}`);
+      // @ts-ignore
       case "expression":
         return this.generate_expression(sub_expression);
       case "value_expression":
@@ -145,6 +176,7 @@ export default class generator {
         return this.generate_unary_expression(sub_expression);
       case "binary_expression":
         return this.generate_binary_expression(sub_expression);
+      // @ts-ignore
       case "member_expression":
         return this.generate_member_expression(sub_expression);
       // @ts-ignore
@@ -158,7 +190,7 @@ export default class generator {
 
   generate_value_expression(
     value_expression: nodes.value_expression_node,
-  ): string {
+  ): string | void {
     switch (value_expression.value.kind) {
       default:
         return todo(
@@ -184,6 +216,8 @@ export default class generator {
         return this.generate_list(value_expression.value);
       case "if":
         return this.generate_if_expression(value_expression.value);
+      case "unwrap":
+        return this.generate_unwrap(value_expression.value);
     }
   }
 
@@ -303,6 +337,8 @@ export default class generator {
   ) {
     const sanitized_type_name = name.replace(/^'/, "");
 
+    const serialized_type_name = `${this.namespace}.${this.module_name}@${sanitized_type_name}`;
+
     const sanitized_name = (
       typeof type_constructor.name.value === "string"
         ? type_constructor.name.value
@@ -354,7 +390,7 @@ ${sanitized_type_name}.to_string = function() {
 
 	${properties.join("\n")}
 
-	this._type = "${sanitized_type_name}#${sanitized_name}";
+	this._type = "${serialized_type_name}#${sanitized_name}";
 
 	this.toString = function() {
 		return \`${sanitized_type_name}#${sanitized_name}(${parameters
@@ -369,7 +405,7 @@ ${sanitized_type_name}.to_string = function() {
 	};
 }
 
-${access}._type = "${sanitized_type_name}#${sanitized_name}";
+${access}._type = "${serialized_type_name}#${sanitized_name}";
 ${access}.toString = function() {
 		return "${sanitized_type_name}#${sanitized_name}";
 }
@@ -719,5 +755,25 @@ ${else_body}
     const right = this.generate_expression(member_expression.value[1]);
 
     return `(${left}.${right})`;
+  }
+
+  generate_unwrap(unwrap_node: nodes.unwrap_node): string {
+    const expression = this.generate_sub_expression(unwrap_node.value);
+
+    const id = this.unique_id();
+
+    this.emit_anchor(`const ${id} = ${expression};
+const ${id}__is_result = globalThis.juice.is_result_type(${id});
+if (!${id}__is_result) {
+	throw new Error("Value is not a result type");
+}
+const ${id}__is_ok = globalThis.juice.is_result_ok(${id});
+
+if (!${id}__is_ok) {
+	return ${id}
+}
+`);
+
+    return `globalThis.juice.unwrap(${id})`;
   }
 }

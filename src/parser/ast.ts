@@ -1,9 +1,4 @@
 import { location } from "@/lexer/location";
-import {
-  identifier_token,
-  macro_identifier_token,
-  type_identifier_token,
-} from "@/lexer/tokens";
 
 export interface root_node {
   kind: "program";
@@ -94,7 +89,8 @@ export interface value_expression_node extends base_node {
     | type_identifier_node
     | function_call_node
     | if_node
-    | list_node;
+    | list_node
+    | unwrap_node;
 }
 
 export interface type_value_expression_node extends base_node {
@@ -165,7 +161,9 @@ export interface statement_node extends base_node {
     | eof_node
     | function_call_node
     | for_node
-    | impl_node;
+    | impl_node
+    | break_node
+    | return_node;
 }
 
 export type primitive_node = string_node | number_node | boolean_node;
@@ -288,6 +286,11 @@ export interface list_node extends base_node {
 export interface return_node extends base_node {
   kind: "return";
   value: expression_node | null;
+}
+
+export interface unwrap_node extends base_node {
+  kind: "unwrap";
+  value: sub_expression_node;
 }
 
 export type node =

@@ -66,9 +66,9 @@ try {
 try {
 	const result = main()
 
-	if (result && result._type && result._type === "result#error") {
+	if (result && result._type && result._type === "dev.juice.std.types.result@result#error") {
 		console.error(result.to_string());
-	} else if (result && result._type && result._type === "result#ok") {
+	} else if (result && result._type && result._type === "dev.juice.std.types.result@result#ok") {
 		// Clean exit...
 	} else if (result) {
 		console.log(result);
