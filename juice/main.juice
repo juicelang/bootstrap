@@ -4,7 +4,7 @@ import .std.data.map (map)
 import .cli.help as help_command
 import .cli.build as build_command
 
-export fn main() {
+export fn main() -> future(result) {
 	args := io.parse_process_arguments([
 		io.argument.boolean("help", "h"),
 		io.argument.boolean("version", "v")

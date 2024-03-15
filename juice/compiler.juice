@@ -7,8 +7,7 @@ export 'compiled_file := {
 	file_path: string
 }
 
-export 'compiler := {
-}
+export 'compiler := {}
 
 impl compiler {
 	static fn new() {

@@ -190,7 +190,7 @@ export default class parser {
     let last_binary_expression: nodes.binary_expression_node | undefined;
     let current_precedence = 0;
 
-    if (is_unary_expression || is_type_expression) {
+    if (is_unary_expression) {
       return {
         kind: "expression",
         value: root_sub_expression,
@@ -225,6 +225,7 @@ export default class parser {
           is_function_argument,
           is_unary_expression,
           is_statement,
+          is_type_expression,
         });
 
         // @ts-expect-error
@@ -274,7 +275,9 @@ export default class parser {
           kind: "assignment",
           type,
           left: root_sub_expression,
-          right: this.parse_expression(),
+          right: this.parse_expression({
+            is_type_expression,
+          }),
           location: this.location(root_sub_expression, root_sub_expression),
         } as nodes.assignment_node;
       }
@@ -395,6 +398,7 @@ export default class parser {
           is_function_argument,
           is_unary_expression,
           is_statement,
+          is_type_expression,
         });
 
         if (next_precedence < current_precedence) {
@@ -480,6 +484,7 @@ export default class parser {
 
           const value = this.parse_expression({
             is_function_argument: true,
+            is_type_expression,
           });
 
           args.push({
@@ -558,6 +563,7 @@ export default class parser {
     is_function_argument = false,
     is_unary_expression = false,
     is_statement = false,
+    is_type_expression = false,
   } = {}): nodes.value_expression_node {
     this.eat_whitespace();
 
@@ -610,7 +616,9 @@ export default class parser {
         break;
       case "open_paren": {
         this.eat();
-        value = this.parse_expression();
+        value = this.parse_expression({
+          is_type_expression,
+        });
 
         this.eat_whitespace();
         let next = this.peek();
@@ -1194,6 +1202,34 @@ export default class parser {
 
     const body = this.parse_block_node();
 
+    let is_async = false;
+
+    if (return_type) {
+      if (
+        return_type.value.kind === "value_expression" &&
+        return_type.value.value.kind === "identifier" &&
+        return_type.value.value.value.length === 1 &&
+        return_type.value.value.value[0].value === "future"
+      ) {
+        is_async = true;
+      } else if (
+        // @ts-expect-error
+        return_type.value.kind === "function_call" &&
+        // @ts-expect-error
+        return_type.value.target.kind === "expression" &&
+        // @ts-expect-error
+        return_type.value.target.value.kind === "value_expression" &&
+        // @ts-expect-error
+        return_type.value.target.value.value.kind === "identifier" &&
+        // @ts-expect-error
+        return_type.value.target.value.value.value.length === 1 &&
+        // @ts-expect-error
+        return_type.value.target.value.value.value[0].value === "future"
+      ) {
+        is_async = true;
+      }
+    }
+
     return {
       kind: "function",
       name,
@@ -1201,6 +1237,7 @@ export default class parser {
       body,
       return_type,
       static: is_static,
+      async: is_async,
       location: this.location(keyword, body),
     };
   }

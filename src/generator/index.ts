@@ -493,9 +493,9 @@ ${access}.to_string = function() {
       })
       .join("\n");
 
-    const result = `function${name ? ` ${name}` : ""}(${parameters.join(
-      ", ",
-    )}) {
+    const result = `${function_node.async ? "async " : ""}function${
+      name ? ` ${name}` : ""
+    }(${parameters.join(", ")}) {
 ${body}
 }`;
 
@@ -754,7 +754,12 @@ ${else_body}
         : this.generate_expression(member_expression.value[0]);
     const right = this.generate_expression(member_expression.value[1]);
 
-    return `(${left}.${right})`;
+    console.log(right);
+    if (right === "await") {
+      return `(await (${left}))`;
+    } else {
+      return `(${left}.${right})`;
+    }
   }
 
   generate_unwrap(unwrap_node: nodes.unwrap_node): string {
@@ -774,6 +779,6 @@ if (!${id}__is_ok) {
 }
 `);
 
-    return `globalThis.juice.unwrap(${id})`;
+    return `globalThis.juice.unwrap_result(${id})`;
   }
 }

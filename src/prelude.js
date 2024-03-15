@@ -13,7 +13,7 @@ globalThis.juice = {
   is_result_ok: (value) => {
     return value && value._type === "dev.juice.std.types.result@result#ok";
   },
-  unwrap: (value) => {
+  unwrap_result: (value) => {
     return value.value;
   },
 };

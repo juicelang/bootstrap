@@ -227,6 +227,7 @@ export interface function_node extends base_node {
   body: block_node;
   return_type: expression_node | null;
   static: boolean;
+  future: boolean;
 }
 
 export interface function_argument_node extends base_node {

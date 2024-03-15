@@ -63,20 +63,24 @@ try {
     if (module_name === "main") {
       code = `import "./__prelude.js";\n` + code;
       code += `
-try {
-	const result = main()
+async function __juice_entry() {
+	try {
+		const result = await main();
 
-	if (result && result._type && result._type === "dev.juice.std.types.result@result#error") {
-		console.error(result.to_string());
-	} else if (result && result._type && result._type === "dev.juice.std.types.result@result#ok") {
-		// Clean exit...
-	} else if (result) {
-		console.log(result);
+		if (result && result._type && result._type === "dev.juice.std.types.result@result#error") {
+			console.error(result.to_string());
+		} else if (result && result._type && result._type === "dev.juice.std.types.result@result#ok") {
+			// Clean exit...
+		} else if (result) {
+			console.log(result);
+		}
+	} catch (error) {
+		console.error("An error occurred while running main.");
+		console.error(error);
 	}
-} catch (error) {
-	console.error("An error occurred while running main.");
-	console.error(error);
 }
+
+__juice_entry();
 `;
     }
 
