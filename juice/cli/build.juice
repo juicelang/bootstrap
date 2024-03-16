@@ -1,3 +1,5 @@
+import .std.log
+import .std.log.pretty (pretty)
 import .std.io
 import .std.path
 import .std.types (type, result, option)
@@ -20,7 +22,7 @@ fn help() {
 	")
 }
 
-export fn run() {
+export fn run() -> future(result) {
 	args := io.parse_process_arguments([
 		io.argument.boolean("help", "h"),
 		io.argument.boolean("version", "v"),
@@ -30,26 +32,23 @@ export fn run() {
 		io.argument.boolean("parse", "P"),
 	])?
 
+	log.debug("${pretty(args)}")
+
 	if args.has("help") {
 		help()
 		return result.ok()
 	}
 
-	relative_project_path := if args.has("project") {
-		args.get("project").value
-	} else {
-		"."
-	}
+	relative_project_path := args.get("project", ".")
 
 	project_path := path.resolve_relative(relative_project_path)
 
-	source_dir := {
-		if args.has("source") {
-			path.resolve([project_path, args.get("source")])
-		} else {
-			path.resolve([project_path, "src"])
-		}
+	source_dir := if args.has("source") {
+		path.resolve([project_path, args.get("source")])
+	} else {
+		path.resolve([project_path, "src"])
 	}
+
 
 	c := compiler.new()
 
@@ -67,9 +66,11 @@ export fn run() {
 			continue
 		}
 
-		compile_result := c.compile(file)?
+		compile_result := c.compile(file).await?
 
 		compiled_files.set(file, compile_result)
 	}
+
+	result.ok(option.none)
 }
 

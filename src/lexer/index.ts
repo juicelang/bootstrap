@@ -546,6 +546,16 @@ export default class lexer {
               c = "\t";
               this.eat();
               break;
+            case "x":
+              this.eat();
+              c = String.fromCharCode(parseInt(this.eat() + this.eat(), 16));
+              break;
+            case "u":
+              this.eat();
+              c = String.fromCharCode(
+                parseInt(this.eat() + this.eat() + this.eat() + this.eat(), 16),
+              );
+              break;
           }
         }
 

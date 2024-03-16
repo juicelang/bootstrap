@@ -2,7 +2,23 @@ String.prototype.starts_with = String.prototype.startsWith;
 
 String.prototype.slice = String.prototype.substring;
 
+String._is_ctor = true;
+String._type = "internal@string";
+String.prototype._type = String._type;
+
 Number.prototype.to_string = Number.prototype.toString;
+
+Number._is_ctor = true;
+Number._type = "internal@number";
+Number.prototype._type = Number._type;
+
+Array._is_ctor = true;
+Array._type = "internal@array";
+Array.prototype._type = Array._type;
+
+globalThis.string = String;
+globalThis.number = Number;
+globalThis.list = Array;
 
 globalThis.juice = {
 	is_juice_type: (value) => value && value._type,

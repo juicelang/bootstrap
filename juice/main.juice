@@ -15,7 +15,7 @@ export fn main() -> future(result) {
 		return
 	}
 
-	positional_args := args.get("_")
+	positional_args := args.get("_", [])
 
 	if positional_args.length == 0 {
 		help_command.run()

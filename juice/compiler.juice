@@ -14,11 +14,11 @@ impl compiler {
 		compiler()
 	}
 
-	fn compile(self, file_path) {
+	fn compile(self, file_path) -> future(result) {
 		io.debug("Compiling file: ${file_path}")
 		compiled := compiled_file()
 
-		// result.ok(compiled)
-		result.error("Cannot compile file: ${file_path}")
+		result.ok(compiled)
+		// result.error("Cannot compile file: ${file_path}")
 	}
 }

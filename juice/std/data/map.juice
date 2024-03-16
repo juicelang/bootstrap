@@ -9,8 +9,12 @@ impl map {
 		map(foreign_map.create())
 	}
 
-	fn get(self, key) {
-		foreign_map.get(self.data, key)
+	fn get(self, key, default_value) {
+		if foreign_map.has(self.data, key) {
+			foreign_map.get(self.data, key)
+		} else {
+			default_value
+		}
 	}
 
 	fn set(self, key, value) {

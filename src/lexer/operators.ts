@@ -36,6 +36,8 @@ export const operators = [
 ] as const;
 
 export const precedence: Record<symbols, number> = {
+  "&&": 0,
+  "||": 0,
   ":=": 1,
   "=": 1,
   "..": 1,
@@ -62,8 +64,6 @@ export const precedence: Record<symbols, number> = {
   "^": 3,
   "|": 3,
   "**": 3,
-  "&&": 4,
-  "||": 4,
   "++": 5,
   "--": 5,
 };
