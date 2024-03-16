@@ -397,7 +397,7 @@ ${sanitized_type_name}.to_string = ${sanitized_type_name}.toString;`;
 
 	this.toString = function() {
 		return \`${sanitized_type_name}#${sanitized_name}(${parameters
-      .map((p) => `${p}: \${this.${p}}`)
+      .map((p) => `${p}: \${globalThis.juice.pretty(this.${p})}`)
       .join(", ")})\`
 	};
 

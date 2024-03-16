@@ -18,6 +18,7 @@ impl compiler {
 		io.debug("Compiling file: ${file_path}")
 		compiled := compiled_file()
 
-		result.ok(compiled)
+		// result.ok(compiled)
+		result.error("Cannot compile file: ${file_path}")
 	}
 }
