@@ -90,7 +90,8 @@ export interface value_expression_node extends base_node {
     | function_call_node
     | if_node
     | list_node
-    | unwrap_node;
+    | unwrap_node
+    | match_node;
 }
 
 export interface type_value_expression_node extends base_node {
@@ -163,7 +164,8 @@ export interface statement_node extends base_node {
     | for_node
     | impl_node
     | break_node
-    | return_node;
+    | return_node
+    | match_node;
 }
 
 export type primitive_node = string_node | number_node | boolean_node;
@@ -227,7 +229,7 @@ export interface function_node extends base_node {
   body: block_node;
   return_type: expression_node | null;
   static: boolean;
-  future: boolean;
+  async: boolean;
 }
 
 export interface function_argument_node extends base_node {
@@ -294,6 +296,19 @@ export interface unwrap_node extends base_node {
   value: sub_expression_node;
 }
 
+export interface match_node extends base_node {
+  kind: "match";
+  target: expression_node;
+  choices: match_choice_node[];
+  fallback: block_node | null;
+}
+
+export interface match_choice_node extends base_node {
+  kind: "match_choice";
+  value: expression_node;
+  body: block_node;
+}
+
 export type node =
   | string_node
   | number_node
@@ -338,4 +353,6 @@ export type node =
   | range_node
   | break_node
   | list_node
-  | impl_node;
+  | impl_node
+  | match_node
+  | match_choice_node;

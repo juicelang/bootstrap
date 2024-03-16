@@ -144,6 +144,9 @@ export default class generator {
       case "return":
         text = this.generate_return(statement.value);
         break;
+      case "match":
+        text = this.generate_match(statement.value);
+        break;
       case "eof":
         return;
     }
@@ -218,6 +221,8 @@ export default class generator {
         return this.generate_if_expression(value_expression.value);
       case "unwrap":
         return this.generate_unwrap(value_expression.value);
+      case "match":
+        return this.generate_match(value_expression.value);
     }
   }
 
@@ -365,9 +370,7 @@ export default class generator {
 ${sanitized_type_name}.toString = function() {
 		return "${sanitized_type_name}";
 }
-${sanitized_type_name}.to_string = function() {
-		return "${sanitized_type_name}";
-}`;
+${sanitized_type_name}.to_string = ${sanitized_type_name}.toString;`;
 
       this.emit_types(setup);
       this.registered_types.push(sanitized_type_name);
@@ -391,6 +394,7 @@ ${sanitized_type_name}.to_string = function() {
 	${properties.join("\n")}
 
 	this._type = "${serialized_type_name}#${sanitized_name}";
+	this._params = [${parameters.map((p) => `"${p}"`).join(", ")}];
 
 	this.toString = function() {
 		return \`${sanitized_type_name}#${sanitized_name}(${parameters
@@ -398,20 +402,15 @@ ${sanitized_type_name}.to_string = function() {
       .join(", ")})\`
 	};
 
-	this.to_string = function() {
-		return \`${sanitized_type_name}#${sanitized_name}(${parameters
-      .map((p) => `${p}: \${this.${p}}`)
-      .join(", ")})\`
-	};
+	this.to_string = this.toString.bind(this);
 }
 
+${access}._is_ctor = true;
 ${access}._type = "${serialized_type_name}#${sanitized_name}";
 ${access}.toString = function() {
 		return "${sanitized_type_name}#${sanitized_name}";
 }
-${access}.to_string = function() {
-		return "${sanitized_type_name}#${sanitized_name}";
-}
+${access}.to_string = ${access}.toString;
 `;
 
     this.emit_types(result);
@@ -486,6 +485,9 @@ ${access}.to_string = function() {
           }
           if (node.value.kind === "if") {
             return `return ${this.generate_if_expression(node.value)}`;
+          }
+          if (node.value.kind === "match") {
+            return `return ${this.generate_match(node.value)}`;
           }
         }
 
@@ -624,6 +626,9 @@ for (let ${identifier} = ${from}; (${id} ? ${identifier} < ${to} : ${identifier}
             if (node.value.kind === "if") {
               return `return ${this.generate_if_expression(node.value)}`;
             }
+            if (node.value.kind === "match") {
+              return `return ${this.generate_match(node.value)}`;
+            }
           }
 
           return this.generate_statement(node);
@@ -692,6 +697,9 @@ ${else_body}
         if (node.value.kind === "if") {
           return this.generate_if_expression(node.value);
         }
+        if (node.value.kind === "match") {
+          return `return ${this.generate_match(node.value)}`;
+        }
       }
       return this.generate_statement(node);
     });
@@ -710,6 +718,9 @@ ${else_body}
               }
               if (node.value.kind === "if") {
                 return `return ${this.generate_if_expression(node.value)}`;
+              }
+              if (node.value.kind === "match") {
+                return `return ${this.generate_match(node.value)}`;
               }
             }
             return this.generate_statement(node);
@@ -779,5 +790,83 @@ if (!${id}__is_ok) {
 `);
 
     return `globalThis.juice.unwrap_result(${id})`;
+  }
+
+  generate_match(match_node: nodes.match_node): string {
+    const target = this.generate_expression(match_node.target)!;
+
+    const choices = match_node.choices
+      .map((choice) => this.generate_match_choice(target, choice))
+      .join("\n");
+
+    const fallback = match_node.fallback
+      ? `return ${this.generate_block_expression(match_node.fallback)}`
+      : `throw new Error("No match found")`;
+
+    return `(() => {
+${choices}
+
+${fallback}
+})()`;
+  }
+
+  generate_match_choice(
+    match_target: string,
+    match_choice: nodes.match_choice_node,
+  ): string {
+    let choice_target: string;
+
+    const bindings: [string, string][] = [];
+    // @ts-expect-error
+    if (match_choice.value.value.kind === "function_call") {
+      // @ts-expect-error
+      const target = this.generate_expression(match_choice.value.value.target)!;
+      choice_target = target;
+
+      // @ts-expect-error
+      for (let i = 0; i < match_choice.value.value.args.length; i++) {
+        // @ts-expect-error
+        const arg = match_choice.value.value.args[
+          i
+        ] as nodes.function_call_argument_node;
+        if (arg.name) {
+          // Binding `arg.value` to `${target}.${arg.name}`
+          // @ts-expect-error
+          const name = this.generate_identifier(arg.name)!;
+          const value = this.generate_expression(arg.value)!;
+          bindings.push([value, `${target}.${name}`]);
+        } else {
+          // Binding `arg.value` to `${target}._args[i]`
+          const name = this.generate_expression(arg.value)!;
+          bindings.push([name, `${match_target}[${target}._args[${i}]]`]);
+        }
+      }
+    } else {
+      choice_target = this.generate_expression(match_choice.value)!;
+    }
+
+    // const body = this.generate_block_expression(match_choice.body);
+    const body = match_choice.body.value
+      .map((statement, i, xs) => {
+        if (i === xs.length - 1) {
+          if (statement.value.kind === "expression") {
+            return `return ${this.generate_expression(statement.value)};`;
+          }
+          if (statement.value.kind === "if") {
+            return `return ${this.generate_if_expression(statement.value)}`;
+          }
+        }
+        return this.generate_statement(statement);
+      })
+      .join("\n");
+
+    const rendered_bindings = bindings
+      .map(([value, target]) => `let ${value} = ${target};`)
+      .join("\n");
+
+    return `if (globalThis.juice.match(${match_target}, ${choice_target})) {
+	${rendered_bindings}
+	${body}
+}`;
   }
 }

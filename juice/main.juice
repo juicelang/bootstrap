@@ -29,13 +29,15 @@ export fn main() -> future(result) {
 
 	sub_command := positional_args.at(0)
 
-	if sub_command == "help" {
-		return help_command.run()
+	match sub_command {
+		"help" -> {
+			help_command.run()
+		}
+		"build" -> {
+			build_command.run(args)
+		}
+		_ -> {
+			result.error("Unknown command ${sub_command}")
+		}
 	}
-
-	if sub_command == "build" {
-		return build_command.run(args)
-	}
-
-	return result.error("Unknown command ${sub_command}")
 }

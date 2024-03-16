@@ -150,7 +150,6 @@ export default class parser {
         });
         break;
       case "keyword":
-        // @ts-expect-error
         value = this.parse_keyword();
         break;
       case "eof":
@@ -211,7 +210,7 @@ export default class parser {
 
       if (
         next.kind === "operator" &&
-        (next.value === ".." || next.value === ",")
+        (next.value === ".." || next.value === "," || next.value === "->")
       ) {
         break;
       }
@@ -936,7 +935,8 @@ export default class parser {
     | nodes.for_node
     | nodes.break_node
     | nodes.impl_node
-    | nodes.return_node {
+    | nodes.return_node
+    | nodes.match_node {
     const keyword = this.peek() as tokens.keyword_token;
 
     switch (keyword.value) {
@@ -960,6 +960,8 @@ export default class parser {
         return this.parse_impl_node();
       case "return":
         return this.parse_return_node();
+      case "match":
+        return this.parse_match_node();
       default:
         return todo(`parse_keyword: ${keyword.value}`);
     }
@@ -1731,6 +1733,73 @@ export default class parser {
       kind: "return",
       value,
       location: this.location(keyword, value),
+    };
+  }
+
+  parse_match_node(): nodes.match_node {
+    const keyword = this.eat() as tokens.keyword_token;
+
+    this.eat_whitespace();
+
+    const target = this.parse_expression();
+
+    this.eat_whitespace();
+
+    const open_curly = this.eat() as tokens.open_curly_token;
+
+    const choices: nodes.match_choice_node[] = [];
+
+    let fallback: nodes.block_node | null = null;
+
+    while (this.cursor < this.tokens.length) {
+      this.eat_whitespace();
+
+      const t = this.peek();
+
+      if (t.kind === "close_curly") {
+        break;
+      }
+
+      const expression = this.parse_expression({
+        is_type_expression: true,
+      });
+
+      this.eat_whitespace();
+
+      const arrow = this.eat() as tokens.operator_token;
+
+      this.eat_whitespace();
+
+      const body = this.parse_block_node();
+
+      if (
+        expression.value.kind === "value_expression" &&
+        expression.value.value.kind === "identifier" &&
+        expression.value.value.value.length === 1 &&
+        expression.value.value.value[0].value === "_"
+      ) {
+        fallback = body;
+        continue;
+      }
+
+      const choice: nodes.match_choice_node = {
+        kind: "match_choice",
+        value: expression,
+        body,
+        location: this.location(expression, body),
+      };
+
+      choices.push(choice);
+    }
+
+    const close_curly = this.eat() as tokens.close_curly_token;
+
+    return {
+      kind: "match",
+      target,
+      choices,
+      fallback,
+      location: this.location(keyword, close_curly),
     };
   }
 }
