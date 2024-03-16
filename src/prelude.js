@@ -2,6 +2,8 @@ String.prototype.starts_with = String.prototype.startsWith;
 
 String.prototype.slice = String.prototype.substring;
 
+Number.prototype.to_string = Number.prototype.toString;
+
 globalThis.juice = {
   is_juice_type: (value) => value && value._type,
   is_result_type: (value) => {
@@ -26,7 +28,7 @@ globalThis.juice = {
       return false;
     }
 
-    if (is_source_juice_type) {
+    if (is_source_juice_type && target._is_ctor) {
       return source._type === target._type;
     }
 

@@ -394,7 +394,6 @@ ${sanitized_type_name}.to_string = ${sanitized_type_name}.toString;`;
 	${properties.join("\n")}
 
 	this._type = "${serialized_type_name}#${sanitized_name}";
-	this._params = [${parameters.map((p) => `"${p}"`).join(", ")}];
 
 	this.toString = function() {
 		return \`${sanitized_type_name}#${sanitized_name}(${parameters
@@ -406,6 +405,7 @@ ${sanitized_type_name}.to_string = ${sanitized_type_name}.toString;`;
 }
 
 ${access}._is_ctor = true;
+${access}._params = [${parameters.map((p) => `"${p}"`).join(", ")}];
 ${access}._type = "${serialized_type_name}#${sanitized_name}";
 ${access}.toString = function() {
 		return "${sanitized_type_name}#${sanitized_name}";
@@ -795,8 +795,10 @@ if (!${id}__is_ok) {
   generate_match(match_node: nodes.match_node): string {
     const target = this.generate_expression(match_node.target)!;
 
+    const id = this.unique_id();
+
     const choices = match_node.choices
-      .map((choice) => this.generate_match_choice(target, choice))
+      .map((choice) => this.generate_match_choice(id, choice))
       .join("\n");
 
     const fallback = match_node.fallback
@@ -804,6 +806,8 @@ if (!${id}__is_ok) {
       : `throw new Error("No match found")`;
 
     return `(() => {
+const ${id} = ${target};
+
 ${choices}
 
 ${fallback}
@@ -838,7 +842,7 @@ ${fallback}
         } else {
           // Binding `arg.value` to `${target}._args[i]`
           const name = this.generate_expression(arg.value)!;
-          bindings.push([name, `${match_target}[${target}._args[${i}]]`]);
+          bindings.push([name, `${match_target}[${target}._params[${i}]]`]);
         }
       }
     } else {
