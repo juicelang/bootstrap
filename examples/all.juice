@@ -13,7 +13,7 @@ import dev.react (render, jsx!, react_node, use_state, dispatch)
 import dev.juice.json as json
 
 // Types can be declared at the base level of a file.
-'package := {
+type package := {
 	// Comments above fields populate documentation.
 	version: string
 }
@@ -50,16 +50,16 @@ fn get_app_version!() -> future(token_stream) {
 	package := get_package().await?
 	version := quote!(package.version)
 
-	//tokens! {
-  //	#{version}
-	//}
+	tokens! {
+		#{version}
+	}
 }
 
 // Variables declared outside of functions are expected to be constants.
 version := get_app_version!()
 
 // Type aliases can be declared at the base level of a file.
-'counter_state := (number, dispatch(number))
+type counter_state := (number, dispatch(number))
 
 fn app() -> react_node {
 	// Multiple return values via tuple
@@ -82,25 +82,24 @@ fn app() -> react_node {
 	}
 
 	// Juice Semantic XML macro
-	//jsx! {
-	//	<div>
-	//		The current count is: {counter}
-	//
-	//		<button on_click={handle_increment}>Increment</button>
-	//		<button on_click={handle_decrement}>Decrement</button>
-	//
-	//		<hr />
-	//
-	//		<span>Version: {version}</span>
-	//	</div>
-	//}
+	jsx! {
+		<div>
+			The current count is: {counter}
+
+			<button on_click={handle_increment}>Increment</button>
+			<button on_click={handle_decrement}>Decrement</button>
+
+			<hr />
+
+			<span>Version: {version}</span>
+		</div>
+	}
 }
 
 export fn main() {
 	root: element = query_selector("#root").unwrap_or_panic("No element with ID \"root\" found.")
 
-	render(
-	root
-	// jsx! { <app /> }
-	)
+	content := jsx! { <app /> }
+
+	render(root, content)
 }
