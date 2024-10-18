@@ -478,7 +478,35 @@ ${access}.to_string = ${access}.toString;
 	}
 
 	generate_identifier(identifier: nodes.identifier_node) {
-		return identifier.value.map((part) => part.value).join(".");
+		const rendered = identifier.value.map((part, i) => {
+			if (part.kind === "interpolation") {
+				return `[${this.generate_sub_expression(part.value)}]`;
+			}
+
+			if (part.kind === "identifier_name") {
+				return part.value
+			}
+
+			return this.generate_sub_expression(part.value);
+		});
+
+		let result = "";
+		for (let i = 0; i < rendered.length; i++) {
+			const current = rendered[i];
+			const next = rendered[i + 1];
+
+			if (next) {
+				if (next.startsWith("[")) {
+					result += `${current}`;
+				} else {
+					result += `${current}.`;
+				}
+			} else {
+				result += `${current}`;
+			}
+		}
+
+		return result;
 	}
 
 	generate_function(function_node: nodes.function_node): string {
