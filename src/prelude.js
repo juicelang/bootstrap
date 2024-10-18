@@ -16,12 +16,17 @@ Array._is_ctor = true;
 Array._type = "internal@array";
 Array.prototype._type = Array._type;
 
+Boolean._is_ctor = true;
+Boolean._type = "internal@bool";
+Boolean.prototype._type = Boolean._type;
+
 globalThis.string = String;
 globalThis.number = Number;
 globalThis.list = Array;
+globalThis.bool = Boolean;
 
 globalThis.juice = {
-	is_juice_type: (value) => value && value._type,
+	is_juice_type: (value) => Boolean(value && value._type),
 	is_result_type: (value) => {
 		return (
 			value &&
@@ -44,7 +49,7 @@ globalThis.juice = {
 			return false;
 		}
 
-		if (is_source_juice_type && target._is_ctor) {
+		if (is_source_juice_type && Object.hasOwn(target, "_is_ctor") && target._is_ctor) {
 			return source._type === target._type;
 		}
 

@@ -377,6 +377,7 @@ export default class generator {
 			!this.registered_types.includes(sanitized_type_name)
 		) {
 			const setup = `${do_export}const ${sanitized_type_name} = Object.create(null);
+${sanitized_type_name}.prototype = {};
 ${sanitized_type_name}.toString = function() {
 		return "${sanitized_type_name}";
 }
@@ -414,6 +415,10 @@ ${sanitized_type_name}.to_string = ${sanitized_type_name}.toString;`;
 	this.to_string = this.toString.bind(this);
 }
 
+${type_constructor.is_shorthand
+				? ""
+				: `Object.setPrototypeOf(${access}.prototype, ${sanitized_type_name}.prototype);`
+			}
 ${access}._is_ctor = true;
 ${access}._params = [${parameters.map((p) => `"${p}"`).join(", ")}];
 ${access}._type = "${serialized_type_name}#${sanitized_name}";
@@ -844,7 +849,7 @@ if (!${id}__is_ok) {
 
 		const fallback = match_node.fallback
 			? `return ${this.generate_block_expression(match_node.fallback)}`
-			: `throw new Error("No match found")`;
+			: `throw new Error("No match found for ${target}")`;
 
 		return `(() => {
 const ${id} = ${target};
@@ -911,7 +916,7 @@ ${fallback}
 
 		return `if (globalThis.juice.match(${match_target}, ${choice_target})) {
 	${rendered_bindings}
-	${body}
+	${body === "" ? "return;" : body}
 }`;
 	}
 

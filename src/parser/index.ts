@@ -1583,7 +1583,7 @@ export default class parser {
 				name: {
 					...name,
 					// @ts-expect-error
-					value: (name.value[0].value as string).substring(1),
+					value: name.value[0].value as string,
 				},
 				args: [],
 				is_shorthand: true,
