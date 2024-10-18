@@ -139,6 +139,8 @@ export default class parser {
 	}
 
 	parse_statement(): nodes.statement_node {
+		this.eat_whitespace();
+
 		let t = this.peek();
 
 		let value: nodes.statement_node["value"];
@@ -188,10 +190,6 @@ export default class parser {
 			this.parse_sub_expression({ is_statement });
 		let last_binary_expression: nodes.binary_expression_node | undefined;
 		let current_precedence = 0;
-
-		if (root_sub_expression.kind === "value_expression" && root_sub_expression.value.kind === "macro_body") {
-			console.log("macro body");
-		}
 
 		if (is_unary_expression) {
 			return {
@@ -1053,12 +1051,12 @@ export default class parser {
 			case "match":
 				return this.parse_match_node();
 			case "type":
-				// @ts-ignore
 				this.eat();
 				this.eat_whitespace();
-				return this.parse_expression({
+				const expr = this.parse_expression({
 					is_statement: true,
 				}) as nodes.type_assignment_node;
+				return expr;
 			default:
 				return todo(`parse_keyword: ${keyword.value}`);
 		}

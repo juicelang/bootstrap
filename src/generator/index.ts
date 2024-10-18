@@ -230,6 +230,8 @@ export default class generator {
 				return this.generate_match(value_expression.value);
 			case "record":
 				return this.generate_record(value_expression.value);
+			case "type_assignment":
+				return "";
 		}
 	}
 
@@ -286,9 +288,11 @@ export default class generator {
 	}
 
 	generate_export(export_node: nodes.export_node): string {
+		const statement = export_node.value;
+
 		if (
-			export_node.value.kind === "statement" &&
-			export_node.value.value.kind === "type_assignment"
+			statement.kind === "statement" &&
+			statement.value.kind === "type_assignment"
 		) {
 			this.export_type = true;
 			this.generate_statement(export_node.value);
