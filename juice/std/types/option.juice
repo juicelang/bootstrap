@@ -1,4 +1,0 @@
-export 'option(value) := {
-	some(value: value)
-	none()
-}

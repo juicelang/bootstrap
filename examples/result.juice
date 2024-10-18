@@ -1,22 +1,5 @@
-import dev.juice.io
-
-type result(value) := {
-	ok(value: value)
-	error(message: string)
-}
-
 export fn main() {
-	x: result(int | float) = result.ok(42)
-
-	match x {
-		result.ok(value: int) -> {
-			io.stdout.write_line("ok(int(${value}))")
-		}
-		result.ok(value: float) -> {
-			io.stdout.write_line("ok(float(${value}))")
-		}
-		result.error(message) -> {
-			io.stdout.write_line("error(\"${message}\")")
-		}
+	js!(x) {
+		console.log("hi")
 	}
 }

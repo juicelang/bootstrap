@@ -4,18 +4,31 @@
 // Specific exports can be imported within parenthesis at the end of the import statement.
 import dev.juice.core
 import dev.juice.fs (read_file)
-import dev.juice.type (validate, result, default)
+import dev.juice.types (validate, default)
 import dev.juice.macro (quote!, tokens!, run!, token_stream, macro_body)
 import dev.juice.web.browser (query_selector, element)
 import dev.react (render, jsx!, react_node, use_state, dispatch)
 
 // Modules can be aliased with `as` to access all exported members.
-import dev.juice.json as json
+import .dev.juice.json as json
+
+// Foreign imports are used to pull in non-Juice code.
+foreign import .webgl
 
 // Types can be declared at the base level of a file.
 type package := {
 	// Comments above fields populate documentation.
 	version: string
+}
+
+type option(t) := {
+	some(value: t)
+	none()
+}
+
+type result(t) := {
+	ok(value: t)
+	error(message: string)
 }
 
 impl default for package {
@@ -56,7 +69,7 @@ fn get_app_version!() -> future(token_stream) {
 }
 
 // Variables declared outside of functions are expected to be constants.
-version := get_app_version!()
+version := get_app_version!(a, b, c)
 
 // Type aliases can be declared at the base level of a file.
 type counter_state := (number, dispatch(number))
@@ -102,4 +115,6 @@ export fn main() {
 	content := jsx! { <app /> }
 
 	render(root, content)
+
+	result::ok(option::none())
 }

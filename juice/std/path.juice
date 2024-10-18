@@ -1,9 +1,0 @@
-foreign import .std.path as foreign_path
-
-export fn resolve_relative(path) {
-	foreign_path.resolve_relative(path)
-}
-
-export fn resolve(parts) {
-	foreign_path.resolve(parts)
-}
