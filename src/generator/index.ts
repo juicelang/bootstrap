@@ -228,6 +228,8 @@ export default class generator {
 				return this.generate_unwrap(value_expression.value);
 			case "match":
 				return this.generate_match(value_expression.value);
+			case "record":
+				return this.generate_record(value_expression.value);
 		}
 	}
 
@@ -906,5 +908,20 @@ ${body}
 			default:
 				return "";
 		}
+	}
+
+	generate_record(record: nodes.record_node) {
+		const properties = record.value.map((entry) => {
+			const key = this.generate_expression(entry.key);
+			const value = this.generate_expression(entry.value);
+
+			if (entry.key.value.kind === "value_expression" && entry.key.value.value.kind !== "identifier") {
+				return `[${key}]: ${value}`;
+			}
+
+			return `${key}: ${value}`;
+		}).join(",");
+
+		return `{${properties}}`;
 	}
 }

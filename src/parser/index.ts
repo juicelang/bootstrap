@@ -219,7 +219,7 @@ export default class parser {
 				break;
 			}
 
-			if (next.kind === "operator" && next.value === ".") {
+			if (next.kind === "operator" && (next.value === "." || next.value === "::")) {
 				this.eat_whitespace();
 
 				this.eat();
@@ -728,7 +728,7 @@ export default class parser {
 				}
 				break;
 			case "open_curly":
-				value = this.parse_block_node();
+				value = this.parse_record_literal();
 				end = value;
 				break;
 			case "type_identifier":
@@ -1955,5 +1955,41 @@ export default class parser {
 			value,
 			location: this.location(open_paren, close_paren),
 		}
+	}
+
+	parse_record_literal(): nodes.record_node {
+		const open_curly = this.eat() as tokens.open_curly_token;
+
+		const entries: nodes.record_entry_node[] = [];
+
+		while (this.cursor < this.tokens.length) {
+			this.eat_whitespace();
+			const t = this.peek();
+			if (t.kind === "close_curly") {
+				break;
+			}
+			const key = this.parse_expression({
+				is_unary_expression: true,
+			});
+			this.eat_whitespace();
+			const equal = this.eat() as tokens.operator_token;
+			this.eat_whitespace();
+			const value = this.parse_expression();
+			entries.push({
+				kind: "record_entry",
+				key,
+				value,
+				location: this.location(key, value),
+			});
+			const comma = this.peek_non_whitespace();
+			if (comma.kind === "operator" && comma.value === ",") {
+				this.eat_whitespace();
+				this.eat();
+			}
+		}
+
+		const close_curly = this.eat() as tokens.close_curly_token;
+
+		return { kind: "record", value: entries, location: this.location(open_curly, close_curly) };
 	}
 }

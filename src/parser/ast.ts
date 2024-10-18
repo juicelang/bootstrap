@@ -94,6 +94,17 @@ export interface boolean_node extends base_node {
 	value: boolean;
 }
 
+export interface record_node extends base_node {
+	kind: "record";
+	value: record_entry_node[];
+}
+
+export interface record_entry_node extends base_node {
+	kind: "record_entry";
+	key: expression_node;
+	value: expression_node;
+}
+
 export interface member_expression_node extends base_node {
 	kind: "member_expression";
 	value: [expression_node, expression_node];
@@ -117,7 +128,8 @@ export interface value_expression_node extends base_node {
 	| unwrap_node
 	| match_node
 	| tuple_node
-	| tuple_type_node;
+	| tuple_type_node
+	| record_node;
 }
 
 export interface type_value_expression_node extends base_node {
