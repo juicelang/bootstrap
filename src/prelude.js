@@ -1,4 +1,7 @@
 String.prototype.starts_with = String.prototype.startsWith;
+String.prototype.ends_with = String.prototype.endsWith;
+String.prototype.pad_start = String.prototype.padStart;
+String.prototype.pad_end = String.prototype.padEnd;
 
 String.prototype.slice = String.prototype.substring;
 

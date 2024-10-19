@@ -52,7 +52,7 @@ try {
 			.replace(/\.juice$/, "")
 			.replace(/\//g, ".");
 
-		console.log(`Compiling ${module_name}...`);
+		// console.log(`Compiling ${module_name}...`);
 		const ast = p.parse(text);
 		let code = g.generate(namespace, module_name, ast);
 

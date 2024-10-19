@@ -753,9 +753,11 @@ export default class parser {
 				value = {
 					// @ts-ignore
 					kind: "macro_body",
+					// @ts-ignore
 					value: t.value,
 					location: t.location,
 				};
+				// @ts-ignore
 				end = value;
 				break;
 			default:
@@ -765,6 +767,7 @@ export default class parser {
 				throw new Error(`Unexpected token in sub_expression: ${t.kind}`);
 		}
 
+		// @ts-ignore
 		if (negate && value.kind !== "number") {
 			throw new Error(`Cannot negate a non-number`);
 		}
@@ -772,6 +775,7 @@ export default class parser {
 		return {
 			// @ts-ignore
 			kind,
+			// @ts-ignore
 			value,
 			location: this.location(start, end),
 		};
@@ -1769,6 +1773,12 @@ export default class parser {
 		const methods: nodes.function_node[] = [];
 
 		const maybe_type = this.parse_expression();
+
+
+		if (maybe_type.value.kind === "member_expression") {
+			console.log(maybe_type.value.value[0].value)
+
+		}
 
 		this.eat_whitespace();
 

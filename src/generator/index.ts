@@ -458,7 +458,8 @@ ${access}.to_string = ${access}.toString;
 			if (part.kind === "raw_string") {
 				result += part.value
 					.replaceAll(/`/g, "\\`")
-					.replaceAll(/\$\{/g, "\\${");
+					.replaceAll(/\$\{/g, "\\${")
+					.replace(/\n/g, "\\n");
 			} else {
 				result += `\${${this.generate_sub_expression(part.value)}}`;
 			}
@@ -652,7 +653,29 @@ for (let ${identifier} = ${from}; (${id} ? ${identifier} < ${to} : ${identifier}
 	generate_impl(impl: nodes.impl_node) {
 		const methods: string[] = [];
 
-		const name = this.generate_expression(impl.target);
+		let name;
+
+		if (impl.target.value.kind === "member_expression") {
+			const member_expression = impl.target.value;
+
+			const parts = member_expression.value.map(part => this.generate_sub_expression(part));
+
+			name = parts.join(".");
+		} else if (impl.target.value.kind === "function_call") {
+			const function_call = impl.target.value;
+			const expression = function_call.target;
+
+			if (expression.value.kind === "member_expression") {
+				const parts = expression.value.value.map(part => this.generate_sub_expression(part));
+
+				name = parts.join(".");
+			} else {
+				name = this.generate_expression(expression);
+			}
+		} else {
+			name = this.generate_expression(impl.target);
+		}
+
 
 		for (const function_node of impl.methods) {
 			if (function_node.name === null) {
@@ -845,7 +868,7 @@ if (!${id}__is_ok) {
 
 		const choices = match_node.choices
 			.map((choice) => this.generate_match_choice(id, choice))
-			.join("\n");
+			.join(" else ");
 
 		const fallback = match_node.fallback
 			? `return ${this.generate_block_expression(match_node.fallback)}`
@@ -854,9 +877,10 @@ if (!${id}__is_ok) {
 		return `(() => {
 const ${id} = ${target};
 
-${choices}
-
+${choices} else {
 ${fallback}
+}
+
 })()`;
 	}
 
