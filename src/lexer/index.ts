@@ -576,6 +576,30 @@ export default class lexer {
 
 		let end = this.location();
 
+		if (value.length > 0 && value[0].kind === "raw_string" && value[0].value.startsWith("\n")) {
+			for (let i = 0; i < value.length; i++) {
+				const part = value[i];
+
+				if (part.kind === "raw_string") {
+					let [first, ...lines] = part.value.split("\n");
+
+					for (let j = 0; j < lines.length; j++) {
+						lines[j] = lines[j].replace(/^\s+\| ?/, "");
+					}
+
+					if (i === value.length - 1) {
+						lines = lines.slice(0, -1)
+					}
+
+					part.value = [first, ...lines].join("\n");
+				}
+			}
+
+			const first = value[0];
+
+			first.value = first.value.slice(1);
+		}
+
 		return {
 			kind: "string",
 			location: { start, end },
