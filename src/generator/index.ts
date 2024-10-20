@@ -193,6 +193,9 @@ export default class generator {
 			// @ts-ignore
 			case "macro_call":
 				return this.generate_macro_call(sub_expression);
+			// @ts-ignore
+			case "string":
+				return this.generate_string(sub_expression);
 		}
 	}
 
