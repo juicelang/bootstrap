@@ -233,6 +233,7 @@ export default class generator {
 				return this.generate_match(value_expression.value);
 			case "record":
 				return this.generate_record(value_expression.value);
+			// @ts-ignore
 			case "type_assignment":
 				return "";
 		}
@@ -460,6 +461,7 @@ ${access}.to_string = ${access}.toString;
 		for (const part of string.value) {
 			if (part.kind === "raw_string") {
 				result += part.value
+					.replaceAll(/\\/g, "\\\\")
 					.replaceAll(/`/g, "\\`")
 					.replaceAll(/\$\{/g, "\\${")
 					.replace(/\n/g, "\\n");

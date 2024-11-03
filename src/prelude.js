@@ -67,3 +67,5 @@ globalThis.juice = {
 		return value.toString();
 	},
 };
+
+globalThis.juice_match = globalThis.juice.match;

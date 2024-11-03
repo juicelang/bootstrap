@@ -767,9 +767,14 @@ export default class parser {
 				throw new Error(`Unexpected token in sub_expression: ${t.kind}`);
 		}
 
-		// @ts-ignore
-		if (negate && value.kind !== "number") {
-			throw new Error(`Cannot negate a non-number`);
+		if (negate) {
+			// @ts-ignore
+			value.value *= -1;
+
+			// @ts-ignore
+			if (value.kind !== "number") {
+				throw new Error(`Cannot negate a non-number`);
+			}
 		}
 
 		return {
